@@ -35,17 +35,28 @@ if (empty($perplexicaUrl)) {
     exit;
 }
 
-// Assuming Perplexica has a similar API to Ollama generate
+$system_prompt = "You are a Specialized Researcher... Your sole purpose is to gather, verify, and synthesize information for the user.";
+
 $data = [
-    'prompt' => $prompt,
+    'chatModel' => [
+        'provider' => 'openai',
+        'name' => 'gpt-4.1-mini'
+    ],
+    'embeddingModel' => [
+        'provider' => 'openai',
+        'name' => 'text-embedding-3-small'
+    ],
+    'optimizationMode' => 'speed',
+    'focusMode' => 'webSearch',
+    'query' => $prompt
 ];
 
-$ch = curl_init($perplexicaUrl . '/search'); // Assuming /search is the endpoint
+$ch = curl_init($perplexicaUrl . '/api/search');
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_POST, true);
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
 curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-curl_setopt($ch, CURLOPT_TIMEOUT, 60); // Longer timeout for potentially longer searches
+curl_setopt($ch, CURLOPT_TIMEOUT, 120); // Longer timeout for potentially longer searches
 
 $response = curl_exec($ch);
 $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -62,10 +73,31 @@ if ($httpcode >= 400) {
     exit;
 }
 
-// This part is an assumption of Perplexica's response format.
-// It might need adjustment based on the actual API.
-$responseData = json_decode($response, true);
-$perplexicaResponse = isset($responseData['response']) ? $responseData['response'] : 'No response from Perplexica.';
+// Perplexica might stream the response. We need to parse the stream.
+$lines = explode("\n", $response);
+$final_response = '';
+foreach ($lines as $line) {
+    if (strpos($line, 'data: ') === 0) {
+        $json_str = substr($line, 6);
+        if ($json_str === '[DONE]') {
+            break;
+        }
+        $json_data = json_decode($json_str, true);
+        if (isset($json_data['answer'])) {
+            $final_response .= $json_data['answer'];
+        }
+    }
+}
 
+if (empty($final_response)) {
+    // Fallback for non-streaming response
+    $responseData = json_decode($response, true);
+    if (isset($responseData['answer'])) {
+        $final_response = $responseData['answer'];
+    }
+    else {
+        $final_response = 'No parsable response from Perplexica.';
+    }
+}
 
-echo json_encode(['success' => true, 'response' => $perplexicaResponse]);
+echo json_encode(['success' => true, 'response' => $final_response]);
