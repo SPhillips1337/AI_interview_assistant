@@ -6,3 +6,6 @@
 
 # Node.js dependencies
 /node_modules/
+
+# History file
+history.json

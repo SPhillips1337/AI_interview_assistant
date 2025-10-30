@@ -66,6 +66,16 @@ if ($provider === 'ollama') {
     $responseData = json_decode($response, true);
     $llmResponse = isset($responseData['response']) ? $responseData['response'] : 'No response from LLM.';
 
+    // Save to history
+    $historyFile = __DIR__ . '/../history.json';
+    $history = json_decode(file_get_contents($historyFile), true);
+    $history[] = [
+        'prompt' => $prompt,
+        'response' => $llmResponse,
+        'timestamp' => time()
+    ];
+    file_put_contents($historyFile, json_encode($history, JSON_PRETTY_PRINT), LOCK_EX);
+
     echo json_encode(['success' => true, 'response' => $llmResponse]);
 
 } else if ($provider === 'openai') {
