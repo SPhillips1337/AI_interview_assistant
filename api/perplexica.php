@@ -73,31 +73,7 @@ if ($httpcode >= 400) {
     exit;
 }
 
-// Perplexica might stream the response. We need to parse the stream.
-$lines = explode("\n", $response);
-$final_response = '';
-foreach ($lines as $line) {
-    if (strpos($line, 'data: ') === 0) {
-        $json_str = substr($line, 6);
-        if ($json_str === '[DONE]') {
-            break;
-        }
-        $json_data = json_decode($json_str, true);
-        if (isset($json_data['answer'])) {
-            $final_response .= $json_data['answer'];
-        }
-    }
-}
-
-if (empty($final_response)) {
-    // Fallback for non-streaming response
-    $responseData = json_decode($response, true);
-    if (isset($responseData['answer'])) {
-        $final_response = $responseData['answer'];
-    }
-    else {
-        $final_response = 'No parsable response from Perplexica.';
-    }
-}
+$responseData = json_decode($response, true);
+$final_response = isset($responseData['message']) ? $responseData['message'] : 'No parsable response from Perplexica.';
 
 echo json_encode(['success' => true, 'response' => $final_response]);
