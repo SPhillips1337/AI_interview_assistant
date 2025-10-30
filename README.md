@@ -9,6 +9,8 @@ A simple web application that acts as an interview assistant. It takes spoken or
 *   **LLM Integration:** Supports both Ollama and OpenAI as backends.
 *   **Enable/Disable Toggle:** A toggle switch to control automatic submission.
 *   **Responsive UI:** Clean and simple interface built with Bootstrap 5.
+*   **Conversation History:** View a timeline of all your conversations on a separate history page.
+*   **Dig Deeper:** Further research a response using Perplexica.
 
 ## Requirements
 
@@ -39,6 +41,12 @@ A simple web application that acts as an interview assistant. It takes spoken or
 4.  **Open the application:**
     Open your web browser and navigate to `http://localhost:8000/`.
 
+## History Page
+
+To view the conversation history, open `http://localhost:8000/history.php` in your browser. This page will update in near real-time as you have new conversations.
+
+If you have configured the `PERPLEXICA_URL` in your `.env` file, you will see a "Dig Deeper" button next to each response, which allows you to send that response to your Perplexica instance for further research.
+
 ## Configuration
 
 The application is configured through the `.env` file. The following variables are available:
@@ -50,6 +58,7 @@ The application is configured through the `.env` file. The following variables a
 *   `OPENAI_BASE_URL`: The base URL for the OpenAI API (optional).
 *   `DEBOUNCE_MS`: The debounce delay in milliseconds before sending the input.
 *   `TIMEOUT_SECONDS`: The request timeout in seconds.
+*   `PERPLEXICA_URL`: The URL for your Perplexica instance (e.g., `http://192.168.5.227:3030`).
 
 **Note:** Do not commit the `.env` file to version control.
 

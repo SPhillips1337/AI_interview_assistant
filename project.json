@@ -1,0 +1,62 @@
+{
+    "projectName": "Interview Assistant",
+    "description": "A simple web application that acts as an interview assistant. It takes spoken or typed input, sends it to a large language model (LLM), and displays the response. It also keeps a history of conversations and allows for deeper research on responses using Perplexica.",
+    "developmentStatus": "In Development",
+    "technologies": {
+        "frontend": ["HTML5", "CSS3", "Bootstrap 5", "jQuery"],
+        "backend": "PHP"
+    },
+    "features": [
+        {
+            "name": "Voice/Text Input",
+            "description": "Accepts user input in a textarea on the main page.",
+            "status": "Implemented"
+        },
+        {
+            "name": "Automatic Submission (Debounced)",
+            "description": "Automatically sends the input to an LLM after a short delay of inactivity.",
+            "status": "Implemented"
+        },
+        {
+            "name": "LLM Integration",
+            "description": "Supports both Ollama and OpenAI as backends via a PHP proxy.",
+            "status": "Partially Implemented (Ollama only)"
+        },
+        {
+            "name": "Enable/Disable Toggle",
+            "description": "A toggle switch to control automatic submission.",
+            "status": "Implemented"
+        },
+        {
+            "name": "Conversation History",
+            "description": "A separate page (`history.php`) that displays a timeline of all conversations.",
+            "status": "Implemented"
+        },
+        {
+            "name": "Dig Deeper with Perplexica",
+            "description": "Allows users to send a response to a Perplexica instance for further research.",
+            "status": "Implemented"
+        }
+    ],
+    "futureEnhancements": [
+        "Implement the OpenAI provider in `api/ask.php`.",
+        "Persist conversation history server-side in a more robust way (e.g., SQLite).",
+        "Add user-selectable models and providers via the UI.",
+        "Implement streaming responses for lower perceived latency.",
+        "Add unit tests for the PHP backend."
+    ],
+    "fileStructure": {
+        "index.php": "Main application page with the input form.",
+        "history.php": "Page to display the conversation history.",
+        "api/ask.php": "PHP proxy to handle LLM requests and save history.",
+        "api/history.php": "PHP endpoint to serve the conversation history.",
+        "api/perplexica.php": "PHP proxy to handle Perplexica requests.",
+        "assets/js/app.js": "JavaScript for the main application page.",
+        "assets/js/history.js": "JavaScript for the history page.",
+        "assets/css/style.css": "Custom CSS styles.",
+        ".env.example": "Example environment variables file.",
+        "README.md": "Project documentation.",
+        "PLAN.md": "Initial project plan.",
+        "project.json": "This file, providing a structured overview of the project."
+    }
+}
