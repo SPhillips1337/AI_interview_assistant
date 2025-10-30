@@ -1,0 +1,12 @@
+.container {
+    max-width: 720px;
+}
+
+#prompt-input {
+    min-height: 150px;
+    resize: vertical;
+}
+
+#response-area .alert {
+    white-space: pre-wrap;
+}
