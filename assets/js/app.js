@@ -1,6 +1,7 @@
 $(document).ready(function() {
     let debounceTimer;
     const debounceMs = 700; // Should be fetched from .env, but hardcoded for now
+    let conversationHistory = [];
 
     const autoSendToggle = $('#autoSendToggle');
     const promptInput = $('#prompt-input');
@@ -37,6 +38,8 @@ $(document).ready(function() {
         promptInput.val('');
         promptInput.prop('disabled', true);
 
+        conversationHistory.push({ role: 'user', content: prompt });
+
         // Add a loading indicator
         responseArea.html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
 
@@ -44,16 +47,21 @@ $(document).ready(function() {
             url: 'api/ask.php',
             type: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify({ prompt: prompt }),
+            data: JSON.stringify({ conversation: conversationHistory }),
             success: function(data) {
                 if (data.success) {
                     responseArea.html(`<div class="alert alert-secondary">${data.response}</div>`);
+                    conversationHistory.push({ role: 'assistant', content: data.response });
                 } else {
                     responseArea.html(`<div class="alert alert-danger">Error: ${data.error}</div>`);
+                    // On error, remove the last user message to allow retrying
+                    conversationHistory.pop();
                 }
             },
             error: function() {
                 responseArea.html('<div class="alert alert-danger">An unknown error occurred.</div>');
+                // On error, remove the last user message to allow retrying
+                conversationHistory.pop();
             },
             complete: function() {
                 promptInput.prop('disabled', false);

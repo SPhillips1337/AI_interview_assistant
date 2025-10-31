@@ -21,12 +21,16 @@ function parseEnv($filePath) {
 $config = parseEnv(__DIR__ . '/../.env');
 
 $requestBody = json_decode(file_get_contents('php://input'), true);
-$prompt = isset($requestBody['prompt']) ? $requestBody['prompt'] : '';
+$conversation = isset($requestBody['conversation']) ? $requestBody['conversation'] : [];
 
-if (empty($prompt)) {
-    echo json_encode(['success' => false, 'error' => 'Prompt is empty.']);
+if (empty($conversation)) {
+    echo json_encode(['success' => false, 'error' => 'Conversation is empty.']);
     exit;
 }
+
+// Get the last message from the user
+$lastMessage = end($conversation);
+$prompt = isset($lastMessage['content']) ? $lastMessage['content'] : '';
 
 $provider = isset($config['PROVIDER']) ? $config['PROVIDER'] : 'ollama';
 
@@ -37,11 +41,11 @@ if ($provider === 'ollama') {
 
     $data = [
         'model' => $ollamaModel,
-        'prompt' => $prompt,
+        'messages' => $conversation,
         'stream' => false
     ];
 
-    $ch = curl_init($ollamaUrl . '/api/generate');
+    $ch = curl_init($ollamaUrl . '/api/chat');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
@@ -64,11 +68,15 @@ if ($provider === 'ollama') {
     }
 
     $responseData = json_decode($response, true);
-    $llmResponse = isset($responseData['response']) ? $responseData['response'] : 'No response from LLM.';
+    $llmResponse = isset($responseData['message']['content']) ? $responseData['message']['content'] : 'No response from LLM.';
 
     // Save to history
     $historyFile = __DIR__ . '/../history.json';
-    $history = json_decode(file_get_contents($historyFile), true);
+    if (file_exists($historyFile)) {
+        $history = json_decode(file_get_contents($historyFile), true);
+    } else {
+        $history = [];
+    }
     $history[] = [
         'prompt' => $prompt,
         'response' => $llmResponse,
@@ -90,9 +98,7 @@ if ($provider === 'ollama') {
 
     $data = [
         'model' => 'gpt-3.5-turbo', // Or another model from config
-        'messages' => [
-            ['role' => 'user', 'content' => $prompt]
-        ]
+        'messages' => $conversation
     ];
 
     $ch = curl_init($baseUrl . '/v1/chat/completions');
@@ -125,7 +131,11 @@ if ($provider === 'ollama') {
 
     // Save to history
     $historyFile = __DIR__ . '/../history.json';
-    $history = json_decode(file_get_contents($historyFile), true);
+    if (file_exists($historyFile)) {
+        $history = json_decode(file_get_contents($historyFile), true);
+    } else {
+        $history = [];
+    }
     $history[] = [
         'prompt' => $prompt,
         'response' => $llmResponse,

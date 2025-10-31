@@ -1,5 +1,6 @@
 $(document).ready(function() {
     const historyTimeline = $('#history-timeline');
+    const topicArea = $('#topic-area');
     const perplexicaModal = new bootstrap.Modal($('#perplexicaModal'));
     const perplexicaModalBody = $('#perplexicaModal .modal-body');
     let lastTimestamp = 0;
@@ -42,6 +43,20 @@ $(document).ready(function() {
         });
     }
 
+    function fetchTopic() {
+        $.ajax({
+            url: 'api/topic.php',
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                topicArea.html(`<div class="card"><div class="card-body"><h4>Current Topic</h4><p class="card-text">${data.topic}</p></div></div>`);
+            },
+            error: function() {
+                console.error('Could not fetch topic.');
+            }
+        });
+    }
+
     historyTimeline.on('click', '.dig-deeper', function() {
         const prompt = unescape($(this).data('prompt'));
         perplexicaModalBody.html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
@@ -65,7 +80,11 @@ $(document).ready(function() {
         });
     });
 
-    // Fetch history on page load and then poll for new entries
+    // Fetch initial data on page load
     fetchHistory();
-    setInterval(fetchHistory, 5000); // Poll every 5 seconds
+    fetchTopic();
+
+    // Poll for new entries
+    setInterval(fetchHistory, 5000);
+    setInterval(fetchTopic, 5000); // Poll every 5 seconds
 });

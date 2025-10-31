@@ -36,6 +36,16 @@
             "name": "Dig Deeper with Perplexica",
             "description": "Allows users to send a response to a Perplexica instance for further research.",
             "status": "Implemented"
+        },
+        {
+            "name": "Conversational Memory",
+            "description": "Remembers the last few turns of the conversation to understand follow-up questions.",
+            "status": "Implemented"
+        },
+        {
+            "name": "Topic Recognition",
+            "description": "Analyzes the conversation history to identify the main topic, displayed in a separate tab on the history page.",
+            "status": "Implemented"
         }
     ],
     "futureEnhancements": [
@@ -50,6 +60,7 @@
         "api/ask.php": "PHP proxy to handle LLM requests and save history.",
         "api/history.php": "PHP endpoint to serve the conversation history.",
         "api/perplexica.php": "PHP proxy to handle Perplexica requests.",
+        "api/topic.php": "PHP endpoint to analyze and return the current conversation topic.",
         "assets/js/app.js": "JavaScript for the main application page.",
         "assets/js/history.js": "JavaScript for the history page.",
         "assets/css/style.css": "Custom CSS styles.",

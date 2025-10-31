@@ -11,6 +11,8 @@ A simple web application that acts as an interview assistant. It takes spoken or
 *   **Responsive UI:** Clean and simple interface built with Bootstrap 5.
 *   **Conversation History:** View a timeline of all your conversations on a separate history page.
 *   **Dig Deeper:** Further research a response using Perplexica.
+*   **Conversational Memory:** Remembers the context of your recent conversation, allowing you to ask follow-up questions naturally.
+*   **Topic Recognition:** Automatically identifies the main topic of your conversation, which you can view on the history page.
 
 ## Requirements
 
@@ -43,7 +45,10 @@ A simple web application that acts as an interview assistant. It takes spoken or
 
 ## History Page
 
-To view the conversation history, open `http://localhost:8000/history.php` in your browser. This page will update in near real-time as you have new conversations.
+To view the conversation details, open `http://localhost:8000/history.php` in your browser. This page contains two tabs:
+
+*   **History:** A timeline of your conversation that updates in near real-time.
+*   **Current Topic:** Displays the main topic of the conversation, analyzed by an LLM. This also updates as the conversation progresses.
 
 If you have configured the `PERPLEXICA_URL` in your `.env` file, you will see a "Dig Deeper" button next to each response, which allows you to send that response to your Perplexica instance for further research.
 
@@ -70,7 +75,11 @@ The application uses a simple PHP proxy to communicate with the LLM provider.
 *   **Request Body (JSON):**
     ```json
     {
-      "prompt": "Your input text..."
+      "conversation": [
+        { "role": "user", "content": "First question..." },
+        { "role": "assistant", "content": "First answer..." },
+        { "role": "user", "content": "Follow-up question..." }
+      ]
     }
     ```
 *   **Response (JSON):**
@@ -78,5 +87,13 @@ The application uses a simple PHP proxy to communicate with the LLM provider.
     {
       "success": true,
       "response": "The LLM's response."
+    }
+    ```
+
+*   **Endpoint:** `GET /api/topic.php`
+*   **Response (JSON):**
+    ```json
+    {
+      "topic": "The identified topic of the conversation."
     }
     ```
