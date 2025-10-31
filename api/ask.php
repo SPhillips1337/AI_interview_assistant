@@ -79,8 +79,61 @@ if ($provider === 'ollama') {
     echo json_encode(['success' => true, 'response' => $llmResponse]);
 
 } else if ($provider === 'openai') {
-    // TODO: Implement OpenAI provider
-    echo json_encode(['success' => false, 'error' => 'OpenAI provider is not yet implemented.']);
+    $apiKey = isset($config['OPENAI_API_KEY']) ? $config['OPENAI_API_KEY'] : '';
+    $baseUrl = isset($config['OPENAI_BASE_URL']) ? $config['OPENAI_BASE_URL'] : 'https://api.openai.com';
+    $timeout = isset($config['TIMEOUT_SECONDS']) ? (int)$config['TIMEOUT_SECONDS'] : 30;
+
+    if (empty($apiKey)) {
+        echo json_encode(['success' => false, 'error' => 'OPENAI_API_KEY is not set in .env file.']);
+        exit;
+    }
+
+    $data = [
+        'model' => 'gpt-3.5-turbo', // Or another model from config
+        'messages' => [
+            ['role' => 'user', 'content' => $prompt]
+        ]
+    ];
+
+    $ch = curl_init($baseUrl . '/v1/chat/completions');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . $apiKey
+    ]);
+    curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
+
+    $response = curl_exec($ch);
+    $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $error = curl_error($ch);
+    curl_close($ch);
+
+    if ($error) {
+        echo json_encode(['success' => false, 'error' => 'cURL Error: ' . $error]);
+        exit;
+    }
+
+    if ($httpcode >= 400) {
+        echo json_encode(['success' => false, 'error' => 'API Error: ' . $response, 'code' => $httpcode]);
+        exit;
+    }
+
+    $responseData = json_decode($response, true);
+    $llmResponse = isset($responseData['choices'][0]['message']['content']) ? $responseData['choices'][0]['message']['content'] : 'No response from OpenAI.';
+
+    // Save to history
+    $historyFile = __DIR__ . '/../history.json';
+    $history = json_decode(file_get_contents($historyFile), true);
+    $history[] = [
+        'prompt' => $prompt,
+        'response' => $llmResponse,
+        'timestamp' => time()
+    ];
+    file_put_contents($historyFile, json_encode($history, JSON_PRETTY_PRINT), LOCK_EX);
+
+    echo json_encode(['success' => true, 'response' => $llmResponse]);
 } else {
     echo json_encode(['success' => false, 'error' => 'Invalid provider specified in .env file.']);
 }

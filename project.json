@@ -20,7 +20,7 @@
         {
             "name": "LLM Integration",
             "description": "Supports both Ollama and OpenAI as backends via a PHP proxy.",
-            "status": "Partially Implemented (Ollama only)"
+            "status": "Implemented"
         },
         {
             "name": "Enable/Disable Toggle",
@@ -39,7 +39,6 @@
         }
     ],
     "futureEnhancements": [
-        "Implement the OpenAI provider in `api/ask.php`.",
         "Persist conversation history server-side in a more robust way (e.g., SQLite).",
         "Add user-selectable models and providers via the UI.",
         "Implement streaming responses for lower perceived latency.",

@@ -12,7 +12,11 @@ $(document).ready(function() {
     }
 
     autoSendToggle.on('change', function() {
-        localStorage.setItem('autoSend', $(this).prop('checked'));
+        const isChecked = $(this).prop('checked');
+        localStorage.setItem('autoSend', isChecked);
+        if (isChecked) {
+            promptInput.val('').focus();
+        }
     });
 
     promptInput.on('input', function() {
