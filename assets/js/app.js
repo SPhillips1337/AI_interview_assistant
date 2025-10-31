@@ -1,11 +1,12 @@
 $(document).ready(function() {
     let debounceTimer;
-    const debounceMs = 700; // Should be fetched from .env, but hardcoded for now
+    const debounceMs = 700;
     let conversationHistory = [];
 
     const autoSendToggle = $('#autoSendToggle');
     const promptInput = $('#prompt-input');
     const responseArea = $('#response-area');
+    const loadingIndicator = $('#loading-indicator');
 
     // Restore toggle state from localStorage
     if (localStorage.getItem('autoSend') === 'false') {
@@ -37,11 +38,13 @@ $(document).ready(function() {
     function sendPrompt(prompt) {
         promptInput.val('');
         promptInput.prop('disabled', true);
+        loadingIndicator.show();
+
+        // Add user's prompt to the display
+        const userPromptHtml = `<div class="card mb-3"><div class="card-header"><strong>You:</strong> ${prompt}</div></div>`;
+        responseArea.prepend(userPromptHtml);
 
         conversationHistory.push({ role: 'user', content: prompt });
-
-        // Add a loading indicator
-        responseArea.html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
 
         $.ajax({
             url: 'api/ask.php',
@@ -50,20 +53,22 @@ $(document).ready(function() {
             data: JSON.stringify({ conversation: conversationHistory }),
             success: function(data) {
                 if (data.success) {
-                    responseArea.html(`<div class="alert alert-secondary">${data.response}</div>`);
+                    const assistantResponseHtml = `<div class="card mb-3"><div class="card-body"><p class="card-text"><strong>Assistant:</strong> ${data.response}</p></div></div>`;
+                    responseArea.prepend(assistantResponseHtml);
                     conversationHistory.push({ role: 'assistant', content: data.response });
                 } else {
-                    responseArea.html(`<div class="alert alert-danger">Error: ${data.error}</div>`);
-                    // On error, remove the last user message to allow retrying
-                    conversationHistory.pop();
+                    const errorHtml = `<div class="alert alert-danger">Error: ${data.error}</div>`;
+                    responseArea.prepend(errorHtml);
+                    conversationHistory.pop(); // Remove the failed user message
                 }
             },
             error: function() {
-                responseArea.html('<div class="alert alert-danger">An unknown error occurred.</div>');
-                // On error, remove the last user message to allow retrying
+                const errorHtml = `<div class="alert alert-danger">An unknown error occurred.</div>`;
+                responseArea.prepend(errorHtml);
                 conversationHistory.pop();
             },
             complete: function() {
+                loadingIndicator.hide();
                 promptInput.prop('disabled', false);
                 promptInput.focus();
             }

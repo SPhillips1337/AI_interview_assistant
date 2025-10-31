@@ -21,6 +21,14 @@
             <textarea class="form-control" id="prompt-input" rows="4" placeholder="Speak or type your thoughts here..."></textarea>
         </div>
 
+        <div id="loading-indicator" class="mt-4" style="display: none;">
+            <div class="text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+
         <div id="response-area" class="mt-4">
             <!-- LLM responses will be displayed here -->
         </div>

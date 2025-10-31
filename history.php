@@ -9,7 +9,7 @@
 </head>
 <body>
 
-    <div class="container mt-5">
+    <div class="container-fluid mt-5">
         <h1 class="text-center mb-4">Conversation Details</h1>
 
         <ul class="nav nav-tabs" id="myTab" role="tablist">
@@ -27,7 +27,16 @@
             </div>
             <div class="tab-pane fade" id="topic" role="tabpanel" aria-labelledby="topic-tab">
                 <div id="topic-area" class="mt-4">
-                    <!-- Topic will be loaded here -->
+                    <div class="row">
+                        <div class="col-lg-7">
+                            <canvas id="wordcloud-canvas" style="width: 100%; height: 400px;"></canvas>
+                        </div>
+                        <div class="col-lg-5">
+                            <div id="current-topic-display">
+                                <!-- Single topic will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -53,6 +62,7 @@
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.1.1/wordcloud2.min.js"></script>
     <script src="assets/js/history.js"></script>
 </body>
 </html>

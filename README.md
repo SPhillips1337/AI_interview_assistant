@@ -1,6 +1,6 @@
 # Interview Assistant
 
-A simple web application that acts as an interview assistant. It takes spoken or typed input, sends it to a large language model (LLM) like Ollama or OpenAI, and displays the response. This tool is designed to be used with a voice-to-text utility like Windows 11 Voice Assistance.
+A simple web application that acts as an interview assistant. It takes spoken or typed input, sends it to a large language model (LLM) like Ollama or OpenAI, and displays the response. The main page displays a scrollable chat history, allowing you to see the full context of your conversation. This tool is designed to be used with a voice-to-text utility like Windows 11 Voice Assistance.
 
 ## Features
 
@@ -13,6 +13,7 @@ A simple web application that acts as an interview assistant. It takes spoken or
 *   **Dig Deeper:** Further research a response using Perplexica.
 *   **Conversational Memory:** Remembers the context of your recent conversation, allowing you to ask follow-up questions naturally.
 *   **Topic Recognition:** Automatically identifies the main topic of your conversation, which you can view on the history page.
+*   **Chat Interface:** Displays a scrollable history of your conversation on the main page.
 
 ## Requirements
 

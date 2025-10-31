@@ -1,8 +1,9 @@
 $(document).ready(function() {
     const historyTimeline = $('#history-timeline');
-    const topicArea = $('#topic-area');
     const perplexicaModal = new bootstrap.Modal($('#perplexicaModal'));
     const perplexicaModalBody = $('#perplexicaModal .modal-body');
+    const wordCloudCanvas = $('#wordcloud-canvas')[0];
+    const currentTopicDisplay = $('#current-topic-display');
     let lastTimestamp = 0;
 
     function fetchHistory() {
@@ -16,6 +17,8 @@ $(document).ready(function() {
                     if (latestTimestamp > lastTimestamp) {
                         renderHistory(history);
                         lastTimestamp = latestTimestamp;
+                        fetchAndDrawWordCloud();
+                        updateTopicDisplay(); // Single function for all topic updates
                     }
                 }
             },
@@ -43,13 +46,67 @@ $(document).ready(function() {
         });
     }
 
-    function fetchTopic() {
+    function fetchAndDrawWordCloud() {
+        $.ajax({
+            url: 'api/topics.php',
+            type: 'GET',
+            dataType: 'json',
+            success: function(topics) {
+                if (topics.length > 0) {
+                    WordCloud(wordCloudCanvas, {
+                        list: topics,
+                        gridSize: 10,
+                        weightFactor: 5,
+                        minSize: 10, // Minimum font size
+                        fontFamily: 'Arial, sans-serif',
+                        fontWeight: 'bold',
+                        color: 'random-dark',
+                        backgroundColor: '#f0f0f0',
+                        click: function(item, dimension, event) {
+                            const topic = item[0];
+                            perplexicaModalBody.html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+                            perplexicaModal.show();
+
+                            $.ajax({
+                                url: 'api/perplexica.php',
+                                type: 'POST',
+                                contentType: 'application/json',
+                                data: JSON.stringify({ prompt: `Provide a detailed explanation of the topic: ${topic}` }),
+                                success: function(data) {
+                                    if (data.success) {
+                                        perplexicaModalBody.html(`<h4>${topic}</h4>${data.response}`);
+                                    } else {
+                                        perplexicaModalBody.html(`<div class="alert alert-danger">Error: ${data.error}</div>`);
+                                    }
+                                },
+                                error: function() {
+                                    perplexicaModalBody.html('<div class="alert alert-danger">An unknown error occurred.</div>');
+                                }
+                            });
+                        }
+                    });
+                }
+            },
+            error: function() {
+                console.error('Could not fetch topics for word cloud.');
+            }
+        });
+    }
+
+    function updateTopicDisplay() {
         $.ajax({
             url: 'api/topic.php',
             type: 'GET',
             dataType: 'json',
             success: function(data) {
-                topicArea.html(`<div class="card"><div class="card-body"><h4>Current Topic</h4><p class="card-text">${data.topic}</p></div></div>`);
+                const topic_full = data.topic_full;
+                const topic_short = data.topic_short;
+
+                // Ensure the card structure is there first, then update its contents
+                currentTopicDisplay.html(`<div class="card"><div class="card-body"><h4 class="card-title"></h4><p class="card-text"></p></div></div>`);
+                
+                $('#current-topic-display .card-title').text(`Current Topic - ${topic_short}`);
+                $('#current-topic-display .card-text').text(topic_full);
             },
             error: function() {
                 console.error('Could not fetch topic.');
@@ -69,7 +126,7 @@ $(document).ready(function() {
             data: JSON.stringify({ prompt: prompt }),
             success: function(data) {
                 if (data.success) {
-                    perplexicaModalBody.html(`<p>${data.response}</p>`);
+                    perplexicaModalBody.html(data.response);
                 } else {
                     perplexicaModalBody.html(`<div class="alert alert-danger">Error: ${data.error}</div>`);
                 }
@@ -82,9 +139,8 @@ $(document).ready(function() {
 
     // Fetch initial data on page load
     fetchHistory();
-    fetchTopic();
+    updateTopicDisplay();
 
-    // Poll for new entries
-    setInterval(fetchHistory, 5000);
-    setInterval(fetchTopic, 5000); // Poll every 5 seconds
+    // Set up polling
+    setInterval(fetchHistory, 5000); // This will trigger other updates as needed
 });

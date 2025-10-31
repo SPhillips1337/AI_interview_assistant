@@ -55,7 +55,7 @@
         "Add unit tests for the PHP backend."
     ],
     "fileStructure": {
-        "index.php": "Main application page with the input form.",
+        "index.php": "Main application page with a chat-style interface for asking questions and seeing a scrollable history of responses.",
         "history.php": "Page to display the conversation history.",
         "api/ask.php": "PHP proxy to handle LLM requests and save history.",
         "api/history.php": "PHP endpoint to serve the conversation history.",

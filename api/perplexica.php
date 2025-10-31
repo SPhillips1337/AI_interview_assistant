@@ -18,6 +18,32 @@ function parseEnv($filePath) {
     return $config;
 }
 
+function markdownToHtml($markdown) {
+    // Headings
+    $markdown = preg_replace('/^### (.*)/m', '<h3>$1</h3>', $markdown);
+    $markdown = preg_replace('/^## (.*)/m', '<h2>$1</h2>', $markdown);
+    $markdown = preg_replace('/^# (.*)/m', '<h1>$1</h1>', $markdown);
+
+    // Bold
+    $markdown = preg_replace('/\*\*(.*?)\*\*/s', '<strong>$1</strong>', $markdown);
+
+    // Unordered lists
+    $markdown = preg_replace('/^\* (.*)/m', '<ul><li>$1</li></ul>', $markdown);
+    $markdown = preg_replace('/^- (.*)/m', '<ul><li>$1</li></ul>', $markdown);
+    $markdown = str_replace('</ul><ul>', '', $markdown);
+
+    // Paragraphs and line breaks
+    $markdown = '<p>' . str_replace("\n\n", '</p><p>', $markdown) . '</p>';
+    $markdown = preg_replace('/<p><(h[1-6])>/i', '<$1>', $markdown);
+    $markdown = preg_replace('/<\/(h[1-6])><\/p>/i', '<\/$1>', $markdown);
+    $markdown = preg_replace('/<p><ul>/i', '<ul>', $markdown);
+    $markdown = preg_replace('/<\/ul><\/p>/i', '<\/ul>', $markdown);
+    $markdown = str_replace("\n", '<br>', $markdown);
+    $markdown = str_replace('<p></p>', '', $markdown);
+
+    return $markdown;
+}
+
 $config = parseEnv(__DIR__ . '/../.env');
 
 $requestBody = json_decode(file_get_contents('php://input'), true);
@@ -34,8 +60,6 @@ if (empty($perplexicaUrl)) {
     echo json_encode(['success' => false, 'error' => 'PERPLEXICA_URL is not set in .env file.']);
     exit;
 }
-
-$system_prompt = "You are a Specialized Researcher... Your sole purpose is to gather, verify, and synthesize information for the user.";
 
 $data = [
     'chatModel' => [
@@ -56,7 +80,7 @@ curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_POST, true);
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
 curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-curl_setopt($ch, CURLOPT_TIMEOUT, 120); // Longer timeout for potentially longer searches
+curl_setopt($ch, CURLOPT_TIMEOUT, 120);
 
 $response = curl_exec($ch);
 $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -74,6 +98,8 @@ if ($httpcode >= 400) {
 }
 
 $responseData = json_decode($response, true);
-$final_response = isset($responseData['message']) ? $responseData['message'] : 'No parsable response from Perplexica.';
+$markdown_response = isset($responseData['message']) ? $responseData['message'] : 'No parsable response from Perplexica.';
 
-echo json_encode(['success' => true, 'response' => $final_response]);
+$html_response = markdownToHtml($markdown_response);
+
+echo json_encode(['success' => true, 'response' => $html_response]);
