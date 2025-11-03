@@ -1,5 +1,6 @@
 <?php
-header('Content-Type: application/json');
+header('Content-Type: text/event-stream');
+header('Cache-Control: no-cache');
 
 // Simple .env file parser
 function parseEnv($filePath) {
@@ -24,15 +25,53 @@ $requestBody = json_decode(file_get_contents('php://input'), true);
 $conversation = isset($requestBody['conversation']) ? $requestBody['conversation'] : [];
 
 if (empty($conversation)) {
-    echo json_encode(['success' => false, 'error' => 'Conversation is empty.']);
+    echo "data: {\"error\": \"Conversation is empty.\"}\n\n";
+    flush();
     exit;
 }
 
-// Get the last message from the user
 $lastMessage = end($conversation);
 $prompt = isset($lastMessage['content']) ? $lastMessage['content'] : '';
 
 $provider = isset($config['PROVIDER']) ? $config['PROVIDER'] : 'ollama';
+
+$fullResponse = '';
+
+$writeCallback = function($curl, $data) use (&$fullResponse) {
+    global $provider;
+    $lines = explode("\n", $data);
+
+    foreach ($lines as $line) {
+        if (empty(trim($line))) continue;
+
+        $decodedLine = json_decode($line, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            // For OpenAI, the line starts with 'data: '
+            if (strpos($line, 'data: ') === 0) {
+                $jsonPart = substr($line, 6);
+                if (trim($jsonPart) === '[DONE]') {
+                    continue;
+                }
+                $decodedLine = json_decode($jsonPart, true);
+            }
+        }
+
+        $content = '';
+        if ($provider === 'ollama' && isset($decodedLine['message']['content'])) {
+            $content = $decodedLine['message']['content'];
+        } else if ($provider === 'openai' && isset($decodedLine['choices'][0]['delta']['content'])) {
+            $content = $decodedLine['choices'][0]['delta']['content'];
+        }
+
+        if (!empty($content)) {
+            $fullResponse .= $content;
+            $response = ['success' => true, 'response' => $content];
+            echo "data: " . json_encode($response) . "\n\n";
+            flush();
+        }
+    }
+    return strlen($data);
+};
 
 if ($provider === 'ollama') {
     $ollamaUrl = isset($config['OLLAMA_URL']) ? $config['OLLAMA_URL'] : 'http://127.0.0.1:11434';
@@ -42,49 +81,18 @@ if ($provider === 'ollama') {
     $data = [
         'model' => $ollamaModel,
         'messages' => $conversation,
-        'stream' => false
+        'stream' => true
     ];
 
     $ch = curl_init($ollamaUrl . '/api/chat');
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    curl_setopt($ch, CURLOPT_WRITEFUNCTION, $writeCallback);
     curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
 
-    $response = curl_exec($ch);
-    $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $error = curl_error($ch);
+    curl_exec($ch);
     curl_close($ch);
-
-    if ($error) {
-        echo json_encode(['success' => false, 'error' => 'cURL Error: ' . $error]);
-        exit;
-    }
-
-    if ($httpcode >= 400) {
-        echo json_encode(['success' => false, 'error' => 'API Error: ' . $response, 'code' => $httpcode]);
-        exit;
-    }
-
-    $responseData = json_decode($response, true);
-    $llmResponse = isset($responseData['message']['content']) ? $responseData['message']['content'] : 'No response from LLM.';
-
-    // Save to history
-    $historyFile = __DIR__ . '/../history.json';
-    if (file_exists($historyFile)) {
-        $history = json_decode(file_get_contents($historyFile), true);
-    } else {
-        $history = [];
-    }
-    $history[] = [
-        'prompt' => $prompt,
-        'response' => $llmResponse,
-        'timestamp' => time()
-    ];
-    file_put_contents($historyFile, json_encode($history, JSON_PRETTY_PRINT), LOCK_EX);
-
-    echo json_encode(['success' => true, 'response' => $llmResponse]);
 
 } else if ($provider === 'openai') {
     $apiKey = isset($config['OPENAI_API_KEY']) ? $config['OPENAI_API_KEY'] : '';
@@ -92,44 +100,37 @@ if ($provider === 'ollama') {
     $timeout = isset($config['TIMEOUT_SECONDS']) ? (int)$config['TIMEOUT_SECONDS'] : 30;
 
     if (empty($apiKey)) {
-        echo json_encode(['success' => false, 'error' => 'OPENAI_API_KEY is not set in .env file.']);
+        echo "data: {\"error\": \"OPENAI_API_KEY is not set in .env file.\"}\n\n";
+        flush();
         exit;
     }
 
     $data = [
-        'model' => 'gpt-3.5-turbo', // Or another model from config
-        'messages' => $conversation
+        'model' => 'gpt-3.5-turbo',
+        'messages' => $conversation,
+        'stream' => true
     ];
 
     $ch = curl_init($baseUrl . '/v1/chat/completions');
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
         'Content-Type: application/json',
         'Authorization: Bearer ' . $apiKey
     ]);
+    curl_setopt($ch, CURLOPT_WRITEFUNCTION, $writeCallback);
     curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
 
-    $response = curl_exec($ch);
-    $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $error = curl_error($ch);
+    curl_exec($ch);
     curl_close($ch);
+} else {
+    echo "data: {\"error\": \"Invalid provider specified in .env file.\"}\n\n";
+    flush();
+    exit;
+}
 
-    if ($error) {
-        echo json_encode(['success' => false, 'error' => 'cURL Error: ' . $error]);
-        exit;
-    }
-
-    if ($httpcode >= 400) {
-        echo json_encode(['success' => false, 'error' => 'API Error: ' . $response, 'code' => $httpcode]);
-        exit;
-    }
-
-    $responseData = json_decode($response, true);
-    $llmResponse = isset($responseData['choices'][0]['message']['content']) ? $responseData['choices'][0]['message']['content'] : 'No response from OpenAI.';
-
-    // Save to history
+// Save the full response to history
+if (!empty($fullResponse)) {
     $historyFile = __DIR__ . '/../history.json';
     if (file_exists($historyFile)) {
         $history = json_decode(file_get_contents($historyFile), true);
@@ -138,12 +139,8 @@ if ($provider === 'ollama') {
     }
     $history[] = [
         'prompt' => $prompt,
-        'response' => $llmResponse,
+        'response' => $fullResponse,
         'timestamp' => time()
     ];
     file_put_contents($historyFile, json_encode($history, JSON_PRETTY_PRINT), LOCK_EX);
-
-    echo json_encode(['success' => true, 'response' => $llmResponse]);
-} else {
-    echo json_encode(['success' => false, 'error' => 'Invalid provider specified in .env file.']);
 }

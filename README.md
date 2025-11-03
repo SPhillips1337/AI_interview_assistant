@@ -14,6 +14,10 @@ A simple web application that acts as an interview assistant. It takes spoken or
 *   **Conversational Memory:** Remembers the context of your recent conversation, allowing you to ask follow-up questions naturally.
 *   **Topic Recognition:** Automatically identifies the main topic of your conversation, which you can view on the history page.
 *   **Chat Interface:** Displays a scrollable history of your conversation on the main page.
+*   **Conversation Report:** Generate a downloadable HTML report of your conversation, including a summary, keywords, and the full transcript.
+*   **Topic Analysis:** The history page now features a dynamic word cloud that visualizes the most frequent and recent topics in your conversation.
+*   **Streaming LLM Responses:** LLM responses are streamed to the user in real-time, improving perceived performance.
+*   **Responsive Navbar:** A responsive navigation bar has been added for easy navigation between the main pages.
 
 ## Requirements
 
@@ -38,7 +42,7 @@ A simple web application that acts as an interview assistant. It takes spoken or
 3.  **Start the PHP built-in server:**
     From the project root directory, run the following command:
     ```bash
-    php -S localhost:8000 -t .
+    php -S localhost:8000
     ```
 
 4.  **Open the application:**
@@ -52,6 +56,8 @@ To view the conversation details, open `http://localhost:8000/history.php` in yo
 *   **Current Topic:** Displays the main topic of the conversation, analyzed by an LLM. This also updates as the conversation progresses.
 
 If you have configured the `PERPLEXICA_URL` in your `.env` file, you will see a "Dig Deeper" button next to each response, which allows you to send that response to your Perplexica instance for further research.
+
+You can also download a full report of the conversation by clicking the "Download Report" button.
 
 ## Configuration
 
@@ -83,12 +89,10 @@ The application uses a simple PHP proxy to communicate with the LLM provider.
       ]
     }
     ```
-*   **Response (JSON):**
+*   **Response (Server-Sent Events):
+**    The endpoint streams the response using SSE. Each message is a JSON object with the following structure:
     ```json
-    {
-      "success": true,
-      "response": "The LLM's response."
-    }
+    data: {"success":true,"response":"The LLM's response chunk."}
     ```
 
 *   **Endpoint:** `GET /api/topic.php`
@@ -98,3 +102,18 @@ The application uses a simple PHP proxy to communicate with the LLM provider.
       "topic": "The identified topic of the conversation."
     }
     ```
+
+*   **Endpoint:** `GET /api/topics.php`
+*   **Response (JSON):**
+    An array of topics and their calculated weights, suitable for a word cloud.
+    ```json
+    [
+      [ "topic1", 10.5 ],
+      [ "topic2", 8.0 ],
+      [ "topic3", 5.5 ]
+    ]
+    ```
+
+*   **Endpoint:** `GET /api/generate_report.php`
+*   **Response:**
+    An HTML page attachment containing a full report of the conversation.

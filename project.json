@@ -46,22 +46,43 @@
             "name": "Topic Recognition",
             "description": "Analyzes the conversation history to identify the main topic, displayed in a separate tab on the history page.",
             "status": "Implemented"
+        },
+        {
+            "name": "Conversation Report Generation",
+            "description": "Generates a downloadable HTML report summarizing the conversation, including a full transcript and identified keywords.",
+            "status": "Implemented"
+        },
+        {
+            "name": "Topic Word Cloud",
+            "description": "Analyzes the entire conversation history to generate weighted topic data suitable for a word cloud visualization.",
+            "status": "Implemented"
+        },
+        {
+            "name": "Streaming LLM Responses",
+            "description": "LLM responses are streamed to the user in real-time, improving perceived performance.",
+            "status": "Implemented"
+        },
+        {
+            "name": "Responsive Navbar",
+            "description": "A responsive navigation bar has been added for easy navigation between the main pages.",
+            "status": "Implemented"
         }
     ],
     "futureEnhancements": [
         "Persist conversation history server-side in a more robust way (e.g., SQLite).",
         "Add user-selectable models and providers via the UI.",
-        "Implement streaming responses for lower perceived latency.",
         "Add unit tests for the PHP backend."
     ],
     "fileStructure": {
         "index.php": "Main application page with a chat-style interface for asking questions and seeing a scrollable history of responses.",
-        "history.php": "Page to display the conversation history.",
-        "api/ask.php": "PHP proxy to handle LLM requests and save history.",
+        "history.php": "Page to display the conversation history and download reports.",
+        "api/ask.php": "PHP proxy to handle streaming LLM requests and save history.",
         "api/history.php": "PHP endpoint to serve the conversation history.",
         "api/perplexica.php": "PHP proxy to handle Perplexica requests.",
         "api/topic.php": "PHP endpoint to analyze and return the current conversation topic.",
-        "assets/js/app.js": "JavaScript for the main application page.",
+        "api/topics.php": "PHP endpoint that analyzes the entire history to generate weighted topic data for a word cloud.",
+        "api/generate_report.php": "PHP endpoint to generate and download a full conversation report in HTML format.",
+        "assets/js/app.js": "JavaScript for the main application page, including handling of streaming responses.",
         "assets/js/history.js": "JavaScript for the history page.",
         "assets/css/style.css": "Custom CSS styles.",
         ".env.example": "Example environment variables file.",

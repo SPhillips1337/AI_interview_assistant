@@ -35,43 +35,73 @@ $(document).ready(function() {
         }, debounceMs);
     });
 
-    function sendPrompt(prompt) {
+    async function sendPrompt(prompt) {
         promptInput.val('');
         promptInput.prop('disabled', true);
         loadingIndicator.show();
 
-        // Add user's prompt to the display
         const userPromptHtml = `<div class="card mb-3"><div class="card-header"><strong>You:</strong> ${prompt}</div></div>`;
         responseArea.prepend(userPromptHtml);
 
         conversationHistory.push({ role: 'user', content: prompt });
 
-        $.ajax({
-            url: 'api/ask.php',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({ conversation: conversationHistory }),
-            success: function(data) {
-                if (data.success) {
-                    const assistantResponseHtml = `<div class="card mb-3"><div class="card-body"><p class="card-text"><strong>Assistant:</strong> ${data.response}</p></div></div>`;
-                    responseArea.prepend(assistantResponseHtml);
-                    conversationHistory.push({ role: 'assistant', content: data.response });
-                } else {
-                    const errorHtml = `<div class="alert alert-danger">Error: ${data.error}</div>`;
-                    responseArea.prepend(errorHtml);
-                    conversationHistory.pop(); // Remove the failed user message
+        const assistantResponseCard = $('<div class="card mb-3"><div class="card-body"><p class="card-text"><strong>Assistant:</strong> </p></div></div>');
+        responseArea.prepend(assistantResponseCard);
+        const assistantResponseContent = assistantResponseCard.find('.card-text');
+
+        let fullResponse = '';
+
+        try {
+            const response = await fetch('api/ask.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ conversation: conversationHistory })
+            });
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) {
+                    break;
                 }
-            },
-            error: function() {
-                const errorHtml = `<div class="alert alert-danger">An unknown error occurred.</div>`;
-                responseArea.prepend(errorHtml);
-                conversationHistory.pop();
-            },
-            complete: function() {
-                loadingIndicator.hide();
-                promptInput.prop('disabled', false);
-                promptInput.focus();
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const jsonStr = line.substring(6);
+                        if (jsonStr) {
+                            try {
+                                const data = JSON.parse(jsonStr);
+                                if (data.success) {
+                                    fullResponse += data.response;
+                                    assistantResponseContent.html(`<strong>Assistant:</strong> ${fullResponse}`);
+                                } else if (data.error) {
+                                    const errorHtml = `<div class="alert alert-danger">Error: ${data.error}</div>`;
+                                    responseArea.prepend(errorHtml);
+                                    conversationHistory.pop();
+                                }
+                            } catch (e) {
+                                // Ignore JSON parsing errors which can happen with partial chunks
+                            }
+                        }
+                    }
+                }
             }
-        });
+        } catch (error) {
+            const errorHtml = `<div class="alert alert-danger">An unknown error occurred.</div>`;
+            responseArea.prepend(errorHtml);
+            conversationHistory.pop();
+        } finally {
+            conversationHistory.push({ role: 'assistant', content: fullResponse });
+            loadingIndicator.hide();
+            promptInput.prop('disabled', false);
+            promptInput.focus();
+        }
     }
 });

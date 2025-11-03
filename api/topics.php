@@ -1,21 +1,25 @@
 <?php
-header('Content-Type: application/json');
+if (basename(__FILE__) == basename($_SERVER["SCRIPT_FILENAME"])) {
+    header('Content-Type: application/json');
+}
 
 // Simple .env file parser
-function parseEnv($filePath) {
-    if (!file_exists($filePath)) {
-        return [];
-    }
-    $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    $config = [];
-    foreach ($lines as $line) {
-        if (strpos(trim($line), '#') === 0) {
-            continue;
+if (!function_exists('parseEnv')) {
+    function parseEnv($filePath) {
+        if (!file_exists($filePath)) {
+            return [];
         }
-        list($name, $value) = explode('=', $line, 2);
-        $config[trim($name)] = trim($value);
+        $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        $config = [];
+        foreach ($lines as $line) {
+            if (strpos(trim($line), '#') === 0) {
+                continue;
+            }
+            list($name, $value) = explode('=', $line, 2);
+            $config[trim($name)] = trim($value);
+        }
+        return $config;
     }
-    return $config;
 }
 
 function getTopicsFromText($text, $config) {
@@ -76,52 +80,60 @@ function getTopicsFromText($text, $config) {
     return $topics_str;
 }
 
-$config = parseEnv(__DIR__ . '/../.env');
+function getTopicsFromHistory($history, $config) {
+    $topics_data = [];
+    $history_count = count($history);
 
-$historyFile = __DIR__ . '/../history.json';
-if (!file_exists($historyFile)) {
-    echo json_encode([]);
-    exit;
-}
+    foreach ($history as $index => $entry) {
+        $conversationText = "User: " . $entry['prompt'] . "\nAssistant: " . $entry['response'];
+        $topics_str = getTopicsFromText($conversationText, $config);
 
-$history = json_decode(file_get_contents($historyFile), true);
+        if (!empty($topics_str)) {
+            $topics = array_map('trim', explode(',', $topics_str));
+            $recency_score = $history_count - $index;
 
-if (empty($history)) {
-    echo json_encode([]);
-    exit;
-}
+            foreach ($topics as $topic) {
+                if (empty($topic)) continue;
 
-$topics_data = [];
-$history_count = count($history);
-
-foreach ($history as $index => $entry) {
-    $conversationText = "User: " . $entry['prompt'] . "\nAssistant: " . $entry['response'];
-    $topics_str = getTopicsFromText($conversationText, $config);
-
-    if (!empty($topics_str)) {
-        $topics = array_map('trim', explode(',', $topics_str));
-        $recency_score = $history_count - $index;
-
-        foreach ($topics as $topic) {
-            if (empty($topic)) continue;
-
-            if (!isset($topics_data[$topic])) {
-                $topics_data[$topic] = ['frequency' => 0, 'recency' => 0];
+                if (!isset($topics_data[$topic])) {
+                    $topics_data[$topic] = ['frequency' => 0, 'recency' => 0];
+                }
+                $topics_data[$topic]['frequency']++;
+                $topics_data[$topic]['recency'] += $recency_score;
             }
-            $topics_data[$topic]['frequency']++;
-            $topics_data[$topic]['recency'] += $recency_score;
         }
     }
+
+    $wordcloud_data = [];
+    foreach ($topics_data as $topic => $data) {
+        $weight = ($data['frequency'] * 1.5) + ($data['recency'] * 1.0);
+        $wordcloud_data[] = [$topic, $weight];
+    }
+
+    usort($wordcloud_data, function($a, $b) {
+        return $b[1] - $a[1];
+    });
+
+    return $wordcloud_data;
 }
 
-$wordcloud_data = [];
-foreach ($topics_data as $topic => $data) {
-    $weight = ($data['frequency'] * 1.5) + ($data['recency'] * 1.0);
-    $wordcloud_data[] = [$topic, $weight];
+if (basename(__FILE__) == basename($_SERVER["SCRIPT_FILENAME"])) {
+    $config = parseEnv(__DIR__ . '/../.env');
+
+    $historyFile = __DIR__ . '/../history.json';
+    if (!file_exists($historyFile)) {
+        echo json_encode([]);
+        exit;
+    }
+
+    $history = json_decode(file_get_contents($historyFile), true);
+
+    if (empty($history)) {
+        echo json_encode([]);
+        exit;
+    }
+
+    $wordcloud_data = getTopicsFromHistory($history, $config);
+
+    echo json_encode($wordcloud_data);
 }
-
-usort($wordcloud_data, function($a, $b) {
-    return $b[1] - $a[1];
-});
-
-echo json_encode($wordcloud_data);
