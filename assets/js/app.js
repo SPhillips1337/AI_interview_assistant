@@ -38,12 +38,14 @@ $(document).ready(function() {
 
     function sendQuickResponse(prompt) {
         return new Promise((resolve, reject) => {
+            console.log('Sending quick response...');
             $.ajax({
                 url: 'api/quick_response.php',
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify({ prompt: prompt }),
                 success: function(data) {
+                    console.log('Quick response received:', data);
                     if (data.success) {
                         const quickResponseHtml = `<div class="card mb-3 bg-light"><div class="card-body"><p class="card-text"><strong>Quick Take:</strong> ${data.response}</p></div></div>`;
                         quickResponseArea.html(quickResponseHtml);
@@ -54,7 +56,7 @@ $(document).ready(function() {
                     }
                 },
                 error: function(jqXHR, textStatus, errorThrown) {
-                    console.error('Quick response request failed.');
+                    console.error('Quick response request failed:', textStatus, errorThrown);
                     reject(errorThrown);
                 }
             });
@@ -79,7 +81,9 @@ $(document).ready(function() {
         let fullResponse = '';
 
         const quickResponsePromise = sendQuickResponse(prompt);
-        const mainResponsePromise = (async () => {
+
+        const mainResponsePromise = new Promise(async (resolve, reject) => {
+            console.log('Sending main request...');
             try {
                 const response = await fetch('api/ask.php', {
                     method: 'POST',
@@ -95,6 +99,8 @@ $(document).ready(function() {
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) {
+                        console.log('Main response stream complete.');
+                        resolve();
                         break;
                     }
 
@@ -123,17 +129,21 @@ $(document).ready(function() {
                     }
                 }
             } catch (error) {
+                console.error('Main request error:', error);
                 const errorHtml = `<div class="alert alert-danger">An unknown error occurred.</div>`;
                 responseArea.prepend(errorHtml);
                 conversationHistory.pop();
+                reject(error);
             }
-        })();
+        });
 
         try {
             await Promise.all([quickResponsePromise, mainResponsePromise]);
+            console.log('Both promises resolved.');
         } catch (error) {
             console.error("An error occurred in one of the promises:", error);
         } finally {
+            console.log('Hiding loading indicator.');
             conversationHistory.push({ role: 'assistant', content: fullResponse });
             loadingIndicator.hide();
             promptInput.prop('disabled', false);
