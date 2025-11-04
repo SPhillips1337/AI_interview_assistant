@@ -17,7 +17,15 @@ function parseEnv($filePath) {
 $config = parseEnv(__DIR__ . '/../.env');
 
 $requestBody = json_decode(file_get_contents('php://input'), true);
-$prompt = isset($requestBody['prompt']) ? $requestBody['prompt'] : '';
+$conversation = isset($requestBody['conversation']) ? $requestBody['conversation'] : [];
+
+if (empty($conversation)) {
+    echo json_encode(['success' => false, 'error' => 'Conversation is empty.']);
+    exit;
+}
+
+$lastMessage = end($conversation);
+$prompt = isset($lastMessage['content']) ? $lastMessage['content'] : '';
 
 if (empty($prompt)) {
     echo json_encode(['success' => false, 'error' => 'Prompt is empty.']);
@@ -26,7 +34,11 @@ if (empty($prompt)) {
 
 $provider = isset($config['PROVIDER']) ? $config['PROVIDER'] : 'ollama';
 
-$quickResponsePrompt = "Identify the main topic of the following user query and provide a single, short paragraph of information about it. User Query: " . $prompt;
+$quickResponsePrompt = "Based on the conversation context, provide a brief one-paragraph summary about the main topic being discussed. Focus on the latest question while considering the overall conversation context.";
+
+// Add conversation context for quick response
+$quickMessages = $conversation;
+$quickMessages[] = ['role' => 'user', 'content' => $quickResponsePrompt];
 
 $response = null;
 
@@ -38,11 +50,11 @@ if ($provider === 'ollama') {
 
     $data = [
         'model' => $ollamaModel,
-        'prompt' => $quickResponsePrompt,
+        'messages' => $quickMessages,
         'stream' => false
     ];
 
-    $ch = curl_init($ollamaUrl . '/api/generate');
+    $ch = curl_init($ollamaUrl . '/api/chat');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
@@ -60,7 +72,7 @@ if ($provider === 'ollama') {
         $response = ['success' => false, 'error' => 'API Error: ' . $apiResponse, 'code' => $httpcode];
     } else {
         $responseData = json_decode($apiResponse, true);
-        $llmResponse = isset($responseData['response']) ? $responseData['response'] : 'No response from LLM.';
+        $llmResponse = isset($responseData['message']['content']) ? $responseData['message']['content'] : 'No response from LLM.';
         $response = ['success' => true, 'response' => $llmResponse];
     }
 } else if ($provider === 'openai') {
@@ -73,7 +85,7 @@ if ($provider === 'ollama') {
     } else {
         $data = [
             'model' => 'gpt-3.5-turbo',
-            'messages' => [['role' => 'user', 'content' => $quickResponsePrompt]],
+            'messages' => $quickMessages,
             'max_tokens' => 150
         ];
 

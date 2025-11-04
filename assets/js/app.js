@@ -43,18 +43,18 @@ $(document).ready(function() {
         }, debounceMs);
     });
 
-    function sendQuickResponse(prompt) {
+    function sendQuickResponse(conversation) {
         return new Promise((resolve, reject) => {
             console.log('Sending quick response...');
             $.ajax({
                 url: 'api/quick_response.php',
                 type: 'POST',
                 contentType: 'application/json',
-                data: JSON.stringify({ prompt: prompt }),
+                data: JSON.stringify({ conversation: conversation }),
                 success: function(data) {
                     console.log('Quick response received:', data);
                     if (data.success) {
-                        const quickResponseHtml = `<div class="card mb-3 bg-light"><div class="card-body"><p class="card-text"><strong>Quick Take:</strong> ${data.response}</p></div></div>`;
+                        const quickResponseHtml = `<div class="card mb-3 bg-light"><div class="card-body"><div class="card-text"><strong>Quick Take:</strong> <div class="mt-2">${marked.parse(data.response)}</div></div></div></div>`;
                         quickResponseArea.html(quickResponseHtml);
                         resolve();
                     } else {
@@ -116,7 +116,7 @@ $(document).ready(function() {
         let fullResponse = '';
 
         try {
-            await sendQuickResponse(prompt);
+            await sendQuickResponse(conversationHistory);
         } catch (error) {
             console.error("Quick response failed:", error);
         }
