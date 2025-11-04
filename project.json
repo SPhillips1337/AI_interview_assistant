@@ -1,6 +1,6 @@
 {
-    "projectName": "Interview Assistant",
-    "description": "A responsive web application that acts as an interview assistant. It takes spoken or typed input, sends it to a large language model (LLM), and displays the response with full markdown formatting. Features include persistent conversation memory, topic navigation, query queuing, and comprehensive reporting capabilities.",
+    "projectName": "AI Research Assistant",
+    "description": "A responsive web application that acts as an AI research assistant. It takes spoken or typed input, sends it to a large language model (LLM), and displays the response with full markdown formatting. Features include persistent conversation memory, topic navigation, query queuing, and comprehensive reporting capabilities.",
     "developmentStatus": "In Development",
     "technologies": {
         "frontend": ["HTML5", "CSS3", "Bootstrap 5", "jQuery", "Marked.js"],

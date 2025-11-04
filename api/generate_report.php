@@ -84,8 +84,8 @@ $summary_prompt = "Provide a concise, one or two paragraph summary of the follow
 $summary = callLlmForSummary($summary_prompt, $config) ?? 'Could not generate summary.';
 
 // 4. Build HTML Report
-$html = "<!DOCTYPE html><html lang='en'>\n<head>\n    <meta charset='UTF-8'>\n    <title>Conversation Report</title>\n    <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' rel='stylesheet'>\n    <script src='https://cdn.jsdelivr.net/npm/marked/marked.min.js'></script>\n</head>\n<body class='container mt-5'>";
-$html .= "<h1>Conversation Summary Report</h1>";
+$html = "<!DOCTYPE html><html lang='en'>\n<head>\n    <meta charset='UTF-8'>\n    <title>AI Research Assistant - Report</title>\n    <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' rel='stylesheet'>\n    <script src='https://cdn.jsdelivr.net/npm/marked/marked.min.js'></script>\n</head>\n<body class='container mt-5'>";
+$html .= "<h1>AI Research Assistant - Conversation Report</h1>";
 $html .= "<p class='text-muted'>Generated on " . date('Y-m-d H:i:s') . "</p>";
 
 $html .= "<h2>Summary of Topics Discussed</h2><div id='summary-content'>" . nl2br(htmlspecialchars($summary)) . "</div>";

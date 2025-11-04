@@ -1,6 +1,6 @@
-# Interview Assistant
+# AI Research Assistant
 
-A responsive web application that acts as an interview assistant. It takes spoken or typed input, sends it to a large language model (LLM) like Ollama or OpenAI, and displays the response with full markdown formatting. The application features a modern three-column layout with topic navigation, persistent conversation memory, and comprehensive reporting capabilities.
+A responsive web application that acts as an AI research assistant. It takes spoken or typed input, sends it to a large language model (LLM) like Ollama or OpenAI, and displays the response with full markdown formatting. The application features a modern three-column layout with topic navigation, persistent conversation memory, and comprehensive reporting capabilities.
 
 ## Features
 
