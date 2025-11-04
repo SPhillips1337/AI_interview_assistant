@@ -106,7 +106,7 @@ $(document).ready(function() {
                 currentTopicDisplay.html(`<div class="card"><div class="card-body"><h4 class="card-title"></h4><p class="card-text"></p></div></div>`);
                 
                 $('#current-topic-display .card-title').text(`Current Topic - ${topic_short}`);
-                $('#current-topic-display .card-text').text(topic_full);
+                $('#current-topic-display .card-text').html(marked.parse(topic_full));
             },
             error: function() {
                 console.error('Could not fetch topic.');
