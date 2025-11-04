@@ -1,6 +1,6 @@
 # Interview Assistant
 
-A simple web application that acts as an interview assistant. It takes spoken or typed input, sends it to a large language model (LLM) like Ollama or OpenAI, and displays the response. The main page displays a scrollable chat history, allowing you to see the full context of your conversation. This tool is designed to be used with a voice-to-text utility like Windows 11 Voice Assistance.
+A responsive web application that acts as an interview assistant. It takes spoken or typed input, sends it to a large language model (LLM) like Ollama or OpenAI, and displays the response with full markdown formatting. The application features a modern three-column layout with topic navigation, persistent conversation memory, and comprehensive reporting capabilities.
 
 ## Features
 
@@ -11,6 +11,9 @@ A simple web application that acts as an interview assistant. It takes spoken or
 *   **Markdown Response Rendering:** All assistant responses (main responses, quick takes, current topic, and history) are rendered with full markdown support for improved readability, including headers, lists, code blocks, bold/italic text, and links.
 *   **Environment Configuration Integration:** Proper loading and integration of PHP environment variables with JavaScript configuration.
 *   **Query Queue System:** Allows queuing multiple queries while processing current requests, enabling continuous conversation flow without waiting for responses.
+*   **Responsive Layout Design:** Three-column responsive layout with topic navigation sidebar, input controls, and quick response areas that adapts to different screen sizes.
+*   **Topic Navigation Widget:** Fixed sidebar widget that builds a clickable list of conversation topics with timestamps, allowing quick navigation to specific responses.
+*   **Enhanced Report Generation:** Generates comprehensive HTML reports with LLM-generated summaries, markdown-formatted responses, topic links, and proper file naming.
 *   **Enable/Disable Toggle:** A toggle switch to control automatic submission.
 *   **Responsive UI:** Clean and simple interface built with Bootstrap 5.
 *   **Conversation History:** View a timeline of all your conversations on a separate history page.
