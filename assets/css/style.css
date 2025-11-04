@@ -1,7 +1,3 @@
-.container {
-    max-width: 720px;
-}
-
 #prompt-input {
     min-height: 150px;
     resize: vertical;
@@ -9,4 +5,23 @@
 
 #response-area .alert {
     white-space: pre-wrap;
+}
+
+#topic-nav .topic-item {
+    padding: 8px 12px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#topic-nav .topic-item:hover {
+    background-color: #f8f9fa;
+}
+
+#topic-nav .topic-item:last-child {
+    border-bottom: none;
+}
+
+.response-anchor {
+    scroll-margin-top: 20px;
 }

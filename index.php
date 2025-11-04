@@ -40,38 +40,69 @@ if (file_exists('.env')) {
         </div>
     </nav>
 
-    <div class="container mt-5">
-        <h1 class="text-center mb-4">Interview Assistant</h1>
-
-        <div class="form-check form-switch mb-3">
-            <input class="form-check-input" type="checkbox" role="switch" id="autoSendToggle" checked>
-            <label class="form-check-label" for="autoSendToggle">Auto-send on pause</label>
-        </div>
-
-        <div class="mb-3">
-            <textarea class="form-control" id="prompt-input" rows="4" placeholder="Speak or type your thoughts here..."></textarea>
-        </div>
-
-        <div id="queue-indicator" class="mb-3" style="display: none;">
-            <div class="alert alert-info">
-                <span id="queue-count">0</span> query(s) queued
-            </div>
-        </div>
-
-        <div id="loading-indicator" class="mt-4" style="display: none;">
-            <div class="text-center">
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading...</span>
+    <div class="container-fluid mt-5">
+        <div class="row">
+            <!-- Topic Navigation Column -->
+            <div class="col-lg-3 col-md-4 d-none d-md-block">
+                <div class="sticky-top" style="top: 20px;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">Topic Navigation</h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="topic-nav" style="max-height: calc(100vh - 200px); overflow-y: auto;">
+                                <div class="text-muted text-center p-3">
+                                    <small>Topics will appear here as you chat</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div id="quick-response-area" class="mt-4">
-            <!-- Quick response will be displayed here -->
-        </div>
+            <!-- Main Content Column -->
+            <div class="col-lg-9 col-md-8 col-12">
+                <h1 class="text-center mb-4">Interview Assistant</h1>
 
-        <div id="response-area" class="mt-4">
-            <!-- LLM responses will be displayed here -->
+                <div class="row">
+                    <!-- Input Column -->
+                    <div class="col-lg-6 col-12">
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" role="switch" id="autoSendToggle" checked>
+                            <label class="form-check-label" for="autoSendToggle">Auto-send on pause</label>
+                        </div>
+
+                        <div class="mb-3">
+                            <textarea class="form-control" id="prompt-input" rows="4" placeholder="Speak or type your thoughts here..."></textarea>
+                        </div>
+
+                        <div id="queue-indicator" class="mb-3" style="display: none;">
+                            <div class="alert alert-info">
+                                <span id="queue-count">0</span> query(s) queued
+                            </div>
+                        </div>
+
+                        <div id="loading-indicator" class="mt-4" style="display: none;">
+                            <div class="text-center">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Response Column -->
+                    <div class="col-lg-6 col-12">
+                        <div id="quick-response-area" class="mt-4 mt-lg-0">
+                            <!-- Quick response will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div id="response-area" class="mt-4">
+                    <!-- LLM responses will be displayed here -->
+                </div>
+            </div>
         </div>
     </div>
 

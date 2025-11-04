@@ -12,6 +12,9 @@ $(document).ready(function() {
     const loadingIndicator = $('#loading-indicator');
     const queueIndicator = $('#queue-indicator');
     const queueCount = $('#queue-count');
+    const topicNav = $('#topic-nav');
+
+    let responseCounter = 0;
 
     // Restore toggle state from localStorage
     if (localStorage.getItem('autoSend') === 'false') {
@@ -78,6 +81,30 @@ $(document).ready(function() {
         }
     }
 
+    function addTopicNavigation(prompt, responseId) {
+        const shortPrompt = prompt.length > 50 ? prompt.substring(0, 50) + '...' : prompt;
+        const topicItem = $(`
+            <div class="topic-item" data-target="${responseId}">
+                <small class="text-muted d-block">${new Date().toLocaleTimeString()}</small>
+                <div>${shortPrompt}</div>
+            </div>
+        `);
+        
+        topicItem.on('click', function() {
+            const targetId = $(this).data('target');
+            const targetElement = $(`#${targetId}`);
+            if (targetElement.length) {
+                targetElement[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+
+        if (topicNav.find('.text-muted').length) {
+            topicNav.empty();
+        }
+        
+        topicNav.append(topicItem);
+    }
+
     function updateQueueIndicator() {
         if (queryQueue.length > 0) {
             queueCount.text(queryQueue.length);
@@ -102,8 +129,13 @@ $(document).ready(function() {
         loadingIndicator.show();
         quickResponseArea.empty();
 
-        const userPromptHtml = `<div class="card mb-3"><div class="card-header"><strong>You:</strong> ${prompt}</div></div>`;
+        responseCounter++;
+        const responseId = `response-${responseCounter}`;
+
+        const userPromptHtml = `<div class="card mb-3" id="${responseId}"><div class="card-header response-anchor"><strong>You:</strong> ${prompt}</div></div>`;
         responseArea.prepend(userPromptHtml);
+
+        addTopicNavigation(prompt, responseId);
 
         conversationHistory.push({ role: 'user', content: prompt });
         localStorage.setItem('conversationHistory', JSON.stringify(conversationHistory));
