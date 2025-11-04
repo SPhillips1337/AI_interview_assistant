@@ -2,12 +2,16 @@ $(document).ready(function() {
     let debounceTimer;
     const debounceMs = window.appConfig?.debounceMs || 700;
     let conversationHistory = [];
+    let queryQueue = [];
+    let isProcessing = false;
 
     const autoSendToggle = $('#autoSendToggle');
     const promptInput = $('#prompt-input');
     const responseArea = $('#response-area');
     const quickResponseArea = $('#quick-response-area');
     const loadingIndicator = $('#loading-indicator');
+    const queueIndicator = $('#queue-indicator');
+    const queueCount = $('#queue-count');
 
     // Restore toggle state from localStorage
     if (localStorage.getItem('autoSend') === 'false') {
@@ -31,7 +35,10 @@ $(document).ready(function() {
         debounceTimer = setTimeout(() => {
             const prompt = promptInput.val().trim();
             if (prompt) {
-                sendPrompt(prompt);
+                queryQueue.push(prompt);
+                promptInput.val('');
+                updateQueueIndicator();
+                processQueue();
             }
         }, debounceMs);
     });
@@ -63,9 +70,27 @@ $(document).ready(function() {
         });
     }
 
+    function updateQueueIndicator() {
+        if (queryQueue.length > 0) {
+            queueCount.text(queryQueue.length);
+            queueIndicator.show();
+        } else {
+            queueIndicator.hide();
+        }
+    }
+
+    function processQueue() {
+        if (isProcessing || queryQueue.length === 0) {
+            return;
+        }
+        
+        const prompt = queryQueue.shift();
+        updateQueueIndicator();
+        sendPrompt(prompt);
+    }
+
     async function sendPrompt(prompt) {
-        promptInput.val('');
-        promptInput.prop('disabled', true);
+        isProcessing = true;
         loadingIndicator.show();
         quickResponseArea.empty();
 
@@ -149,9 +174,10 @@ $(document).ready(function() {
         } finally {
             console.log('Hiding loading indicator.');
             conversationHistory.push({ role: 'assistant', content: fullResponse });
+            isProcessing = false;
             loadingIndicator.hide();
-            promptInput.prop('disabled', false);
             promptInput.focus();
+            processQueue();
         }
     }
 });

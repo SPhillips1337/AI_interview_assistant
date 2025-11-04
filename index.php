@@ -52,6 +52,12 @@ if (file_exists('.env')) {
             <textarea class="form-control" id="prompt-input" rows="4" placeholder="Speak or type your thoughts here..."></textarea>
         </div>
 
+        <div id="queue-indicator" class="mb-3" style="display: none;">
+            <div class="alert alert-info">
+                <span id="queue-count">0</span> query(s) queued
+            </div>
+        </div>
+
         <div id="loading-indicator" class="mt-4" style="display: none;">
             <div class="text-center">
                 <div class="spinner-border" role="status">
