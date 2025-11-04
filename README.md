@@ -7,14 +7,15 @@ A simple web application that acts as an interview assistant. It takes spoken or
 *   **Voice/Text Input:** Accepts user input in a textarea.
 *   **Automatic Submission:** Automatically sends the input to an LLM after a short delay (debounced).
 *   **LLM Integration:** Supports both Ollama and OpenAI as backends.
-*   **Quick Response:** Displays a quick, one-paragraph summary of the user's query topic using a lightweight model, appearing before the main response.
-*   **Markdown Response Rendering:** Assistant responses are rendered with full markdown support for improved readability, including headers, lists, code blocks, bold/italic text, and links.
+*   **Quick Response:** Displays a context-aware, one-paragraph summary of the user's query topic using a lightweight model, appearing before the main response.
+*   **Markdown Response Rendering:** All assistant responses (main responses, quick takes, current topic, and history) are rendered with full markdown support for improved readability, including headers, lists, code blocks, bold/italic text, and links.
 *   **Environment Configuration Integration:** Proper loading and integration of PHP environment variables with JavaScript configuration.
+*   **Query Queue System:** Allows queuing multiple queries while processing current requests, enabling continuous conversation flow without waiting for responses.
 *   **Enable/Disable Toggle:** A toggle switch to control automatic submission.
 *   **Responsive UI:** Clean and simple interface built with Bootstrap 5.
 *   **Conversation History:** View a timeline of all your conversations on a separate history page.
 *   **Dig Deeper:** Further research a response using Perplexica.
-*   **Conversational Memory:** Remembers the context of your recent conversation, allowing you to ask follow-up questions naturally.
+*   **Conversational Memory:** Remembers the context of your recent conversation with persistent browser storage, allowing you to ask follow-up questions naturally across sessions.
 *   **Topic Recognition:** Automatically identifies the main topic of your conversation, which you can view on the history page.
 *   **Chat Interface:** Displays a scrollable history of your conversation on the main page.
 *   **Conversation Report:** Generate a downloadable HTML report of your conversation, including a summary, keywords, and the full transcript.

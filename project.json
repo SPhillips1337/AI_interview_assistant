@@ -39,7 +39,7 @@
         },
         {
             "name": "Conversational Memory",
-            "description": "Remembers the last few turns of the conversation to understand follow-up questions.",
+            "description": "Remembers the context of your recent conversation with persistent localStorage storage, allowing you to ask follow-up questions naturally across browser sessions.",
             "status": "Implemented"
         },
         {
@@ -69,12 +69,17 @@
         },
         {
             "name": "Quick Response",
-            "description": "Displays a quick, one-paragraph summary of the user's query topic using a lightweight model, appearing before the main response.",
+            "description": "Displays a context-aware, one-paragraph summary of the user's query topic using a lightweight model, appearing before the main response with full conversation context.",
             "status": "Implemented"
         },
         {
             "name": "Markdown Response Rendering",
-            "description": "Assistant responses are rendered with markdown formatting for improved readability, including headers, lists, code blocks, and links.",
+            "description": "All assistant responses (main responses, quick takes, current topic, and history) are rendered with markdown formatting for improved readability, including headers, lists, code blocks, and links.",
+            "status": "Implemented"
+        },
+        {
+            "name": "Query Queue System",
+            "description": "Allows queuing multiple queries while processing current requests, enabling continuous conversation flow without waiting for responses.",
             "status": "Implemented"
         },
         {
