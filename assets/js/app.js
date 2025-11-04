@@ -37,22 +37,27 @@ $(document).ready(function() {
     });
 
     function sendQuickResponse(prompt) {
-        $.ajax({
-            url: 'api/quick_response.php',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({ prompt: prompt }),
-            success: function(data) {
-                if (data.success) {
-                    const quickResponseHtml = `<div class="card mb-3 bg-light"><div class="card-body"><p class="card-text"><strong>Quick Take:</strong> ${data.response}</p></div></div>`;
-                    quickResponseArea.html(quickResponseHtml);
-                } else {
-                    console.error('Quick response error:', data.error);
+        return new Promise((resolve, reject) => {
+            $.ajax({
+                url: 'api/quick_response.php',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ prompt: prompt }),
+                success: function(data) {
+                    if (data.success) {
+                        const quickResponseHtml = `<div class="card mb-3 bg-light"><div class="card-body"><p class="card-text"><strong>Quick Take:</strong> ${data.response}</p></div></div>`;
+                        quickResponseArea.html(quickResponseHtml);
+                        resolve();
+                    } else {
+                        console.error('Quick response error:', data.error);
+                        reject(data.error);
+                    }
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error('Quick response request failed.');
+                    reject(errorThrown);
                 }
-            },
-            error: function() {
-                console.error('Quick response request failed.');
-            }
+            });
         });
     }
 
@@ -67,61 +72,67 @@ $(document).ready(function() {
 
         conversationHistory.push({ role: 'user', content: prompt });
 
-        // Fetch quick response
-        sendQuickResponse(prompt);
-
         const assistantResponseCard = $('<div class="card mb-3"><div class="card-body"><p class="card-text"><strong>Assistant:</strong> </p></div></div>');
         responseArea.prepend(assistantResponseCard);
         const assistantResponseContent = assistantResponseCard.find('.card-text');
 
         let fullResponse = '';
 
-        try {
-            const response = await fetch('api/ask.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ conversation: conversationHistory })
-            });
+        const quickResponsePromise = sendQuickResponse(prompt);
+        const mainResponsePromise = (async () => {
+            try {
+                const response = await fetch('api/ask.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ conversation: conversationHistory })
+                });
 
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) {
-                    break;
-                }
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) {
+                        break;
+                    }
 
-                const chunk = decoder.decode(value, { stream: true });
-                const lines = chunk.split('\n');
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
 
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        const jsonStr = line.substring(6);
-                        if (jsonStr) {
-                            try {
-                                const data = JSON.parse(jsonStr);
-                                if (data.success) {
-                                    fullResponse += data.response;
-                                    assistantResponseContent.html(`<strong>Assistant:</strong> ${fullResponse}`);
-                                } else if (data.error) {
-                                    const errorHtml = `<div class="alert alert-danger">Error: ${data.error}</div>`;
-                                    responseArea.prepend(errorHtml);
-                                    conversationHistory.pop();
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const jsonStr = line.substring(6);
+                            if (jsonStr) {
+                                try {
+                                    const data = JSON.parse(jsonStr);
+                                    if (data.success) {
+                                        fullResponse += data.response;
+                                        assistantResponseContent.html(`<strong>Assistant:</strong> ${fullResponse}`);
+                                    } else if (data.error) {
+                                        const errorHtml = `<div class="alert alert-danger">Error: ${data.error}</div>`;
+                                        responseArea.prepend(errorHtml);
+                                        conversationHistory.pop();
+                                    }
+                                } catch (e) {
+                                    // Ignore JSON parsing errors which can happen with partial chunks
                                 }
-                            } catch (e) {
-                                // Ignore JSON parsing errors which can happen with partial chunks
                             }
                         }
                     }
                 }
+            } catch (error) {
+                const errorHtml = `<div class="alert alert-danger">An unknown error occurred.</div>`;
+                responseArea.prepend(errorHtml);
+                conversationHistory.pop();
             }
+        })();
+
+        try {
+            await Promise.all([quickResponsePromise, mainResponsePromise]);
         } catch (error) {
-            const errorHtml = `<div class="alert alert-danger">An unknown error occurred.</div>`;
-            responseArea.prepend(errorHtml);
-            conversationHistory.pop();
+            console.error("An error occurred in one of the promises:", error);
         } finally {
             conversationHistory.push({ role: 'assistant', content: fullResponse });
             loadingIndicator.hide();
