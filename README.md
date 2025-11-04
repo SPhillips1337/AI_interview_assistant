@@ -7,6 +7,7 @@ A simple web application that acts as an interview assistant. It takes spoken or
 *   **Voice/Text Input:** Accepts user input in a textarea.
 *   **Automatic Submission:** Automatically sends the input to an LLM after a short delay (debounced).
 *   **LLM Integration:** Supports both Ollama and OpenAI as backends.
+*   **Quick Response:** Displays a quick, one-paragraph summary of the user's query topic using a lightweight model, appearing before the main response.
 *   **Enable/Disable Toggle:** A toggle switch to control automatic submission.
 *   **Responsive UI:** Clean and simple interface built with Bootstrap 5.
 *   **Conversation History:** View a timeline of all your conversations on a separate history page.
@@ -66,6 +67,7 @@ The application is configured through the `.env` file. The following variables a
 *   `PROVIDER`: The LLM provider to use. Can be `ollama` or `openai`.
 *   `OLLAMA_URL`: The URL for your Ollama instance (if using Ollama).
 *   `OLLAMA_MODEL`: The Ollama model to use.
+*   `OLLAMA_QUICK_MODEL`: The lightweight Ollama model to use for the quick response feature.
 *   `OPENAI_API_KEY`: Your OpenAI API key (if using OpenAI).
 *   `OPENAI_BASE_URL`: The base URL for the OpenAI API (optional).
 *   `DEBOUNCE_MS`: The debounce delay in milliseconds before sending the input.
@@ -93,6 +95,21 @@ The application uses a simple PHP proxy to communicate with the LLM provider.
 **    The endpoint streams the response using SSE. Each message is a JSON object with the following structure:
     ```json
     data: {"success":true,"response":"The LLM's response chunk."}
+    ```
+
+*   **Endpoint:** `POST /api/quick_response.php`
+*   **Request Body (JSON):**
+    ```json
+    {
+      "prompt": "User's query..."
+    }
+    ```
+*   **Response (JSON):**
+    ```json
+    {
+      "success": true,
+      "response": "A short, one-paragraph summary of the topic."
+    }
     ```
 
 *   **Endpoint:** `GET /api/topic.php`

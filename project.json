@@ -66,6 +66,11 @@
             "name": "Responsive Navbar",
             "description": "A responsive navigation bar has been added for easy navigation between the main pages.",
             "status": "Implemented"
+        },
+        {
+            "name": "Quick Response",
+            "description": "Displays a quick, one-paragraph summary of the user's query topic using a lightweight model, appearing before the main response.",
+            "status": "Implemented"
         }
     ],
     "futureEnhancements": [
@@ -77,6 +82,7 @@
         "index.php": "Main application page with a chat-style interface for asking questions and seeing a scrollable history of responses.",
         "history.php": "Page to display the conversation history and download reports.",
         "api/ask.php": "PHP proxy to handle streaming LLM requests and save history.",
+        "api/quick_response.php": "PHP endpoint to generate a quick response using a lightweight model.",
         "api/history.php": "PHP endpoint to serve the conversation history.",
         "api/perplexica.php": "PHP proxy to handle Perplexica requests.",
         "api/topic.php": "PHP endpoint to analyze and return the current conversation topic.",

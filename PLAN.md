@@ -1,7 +1,7 @@
 # Interview Assistant — Project Plan
 
 ## One-line summary
-A small local HTML/PHP/jQuery site (Bootstrap 5) that accepts spoken or typed input in a textarea, then—after a short debounce—sends it to an LLM (Ollama or OpenAI) via a simple PHP proxy, clears the input, and shows the LLM response in a response pane. Includes an on/off toggle to enable/disable automatic sending.
+A simple web application that acts as an interview assistant. It takes spoken or typed input, sends it to a large language model (LLM), and displays the response. It also keeps a history of conversations and allows for deeper research on responses using Perplexica.
 
 ## Goals and acceptance criteria
 - UI: Clean, responsive page using Bootstrap 5 with a textarea, response area, and toggle button.
@@ -9,6 +9,14 @@ A small local HTML/PHP/jQuery site (Bootstrap 5) that accepts spoken or typed in
 - Backend: PHP endpoint that reads configuration from `.env` and forwards requests to either Ollama (local or remote) or OpenAI.
 - Security: API keys live only in `.env` (never committed).
 - Developer experience: Can run locally via PHP built-in server. Minimal dependencies (Bootstrap/jQuery via CDN).
+- **Conversation History:** A separate page (`history.php`) that displays a timeline of all conversations.
+- **Dig Deeper with Perplexica:** Allows users to send a response to a Perplexica instance for further research.
+- **Conversational Memory:** Remembers the last few turns of the conversation to understand follow-up questions.
+- **Topic Recognition:** Analyzes the conversation history to identify the main topic, displayed in a separate tab on the history page.
+- **Conversation Report Generation:** Generates a downloadable HTML report summarizing the conversation, including a full transcript and identified keywords.
+- **Topic Word Cloud:** Analyzes the entire conversation history to generate weighted topic data suitable for a word cloud visualization.
+- **Streaming LLM Responses:** LLM responses are streamed to the user in real-time, improving perceived performance.
+- **Responsive Navbar:** A responsive navigation bar has been added for easy navigation between the main pages.
 
 ## Assumptions
 - The user will use Windows 11 voice assist to input text into the textarea (client-side). The app does not perform speech recognition — Windows handles that.
@@ -18,7 +26,7 @@ A small local HTML/PHP/jQuery site (Bootstrap 5) that accepts spoken or typed in
 
 ## Contract (tiny)
 - Input: user text string from textarea.
-- Output: JSON object with at least { success: bool, response: string, error?: string }.
+- Output: Server-Sent Events (SSE) for streaming responses.
 - Error modes: network timeouts, provider error, invalid config.
 
 ## Edge cases to handle
@@ -29,12 +37,21 @@ A small local HTML/PHP/jQuery site (Bootstrap 5) that accepts spoken or typed in
 - Rapid input: debounce prevents flooding provider.
 
 ## Architecture / File map
-- `index.php` — main page, includes Bootstrap + jQuery via CDN, minimal markup, toggle and textarea.
-- `api/ask.php` — PHP proxy; reads `.env`, chooses provider, forwards request, returns JSON.
-- `assets/js/app.js` — client JS: debounce, toggle handling, fetch to `/api/ask.php`, UI updates.
-- `assets/css/style.css` — small styles.
-- `.env.example` — example env variables.
-- `README.md` — run instructions and notes.
+- `index.php` — Main application page with a chat-style interface for asking questions and seeing a scrollable history of responses.
+- `history.php` — Page to display the conversation history and download reports.
+- `api/ask.php` — PHP proxy to handle streaming LLM requests and save history.
+- `api/history.php` — PHP endpoint to serve the conversation history.
+- `api/perplexica.php` — PHP proxy to handle Perplexica requests.
+- `api/topic.php` — PHP endpoint to analyze and return the current conversation topic.
+- `api/topics.php` — PHP endpoint that analyzes the entire history to generate weighted topic data for a word cloud.
+- `api/generate_report.php` — PHP endpoint to generate and download a full conversation report in HTML format.
+- `assets/js/app.js` — JavaScript for the main application page, including handling of streaming responses.
+- `assets/js/history.js` — JavaScript for the history page.
+- `assets/css/style.css` — Custom CSS styles.
+- `.env.example` — Example environment variables file.
+- `README.md` — Project documentation.
+- `PLAN.md` — Initial project plan.
+- `project.json` — This file, providing a structured overview of the project.
 
 ## Environment variables (`.env` / `.env.example`)
 - PROVIDER=ollama|openai
@@ -44,17 +61,27 @@ A small local HTML/PHP/jQuery site (Bootstrap 5) that accepts spoken or typed in
 - OPENAI_BASE_URL=https://api.openai.com (optional; defaults to OpenAI official API)
 - DEBOUNCE_MS=700
 - TIMEOUT_SECONDS=30
+- PERPLEXICA_URL=http://127.0.0.1:8080
 
 Note: Do not commit `.env`.
 
 ## API behavior (proxy)
-- Endpoint: `POST /api/ask.php`
-- Request body (JSON): { "prompt": "..." }
-- Response (JSON): { "success": true, "response": "LLM answer text" }
+- **Endpoint:** `POST /api/ask.php`
+- **Request body (JSON):** `{ "conversation": [...] }`
+- **Response (Server-Sent Events):** The endpoint streams the response using SSE. Each message is a JSON object with the following structure: `data: {"success":true,"response":"The LLM's response chunk."}`
+
+- **Endpoint:** `GET /api/topic.php`
+- **Response (JSON):** `{ "topic": "The identified topic of the conversation." }`
+
+- **Endpoint:** `GET /api/topics.php`
+- **Response (JSON):** An array of topics and their calculated weights, suitable for a word cloud. `[ [ "topic1", 10.5 ], [ "topic2", 8.0 ] ]`
+
+- **Endpoint:** `GET /api/generate_report.php`
+- **Response:** An HTML page attachment containing a full report of the conversation.
 
 Provider implementation notes:
-- Ollama: POST to `${OLLAMA_URL}/api/generate` with { model, input }. (Check Ollama API spec — adapt payload to your Ollama version.)
-- OpenAI: POST to `${OPENAI_BASE_URL}/v1/chat/completions` with messages format or to `/v1/responses` depending on your target API, include Authorization header `Bearer ${OPENAI_API_KEY}`.
+- Ollama: POST to `${OLLAMA_URL}/api/chat` with `{ model, messages, stream: true }`.
+- OpenAI: POST to `${OPENAI_BASE_URL}/v1/chat/completions` with `{ model, messages, stream: true }`, include Authorization header `Bearer ${OPENAI_API_KEY}`.
 - Use curl-like PHP client (cURL) with timeout and error handling.
 
 ## UI details
@@ -74,12 +101,12 @@ Provider implementation notes:
 2. Create `assets/js/app.js` with logic:
    - read debounce ms from server or default,
    - handle toggle state and persist in `localStorage`,
-   - implement debounce and send using `$.ajax` to `/api/ask.php`.
+   - implement debounce and send using `fetch` to `/api/ask.php`.
 3. Create `api/ask.php`:
    - read `.env` (simple parser),
    - validate provider and config,
    - forward request to provider with correct headers and body,
-   - normalize provider response to a simple string and return JSON.
+   - stream the provider response to the client.
 4. Add `.env.example` and `README.md`.
 5. Manual QA and iterate.
 
@@ -88,7 +115,7 @@ Provider implementation notes:
 2. From project root run the PHP built-in server:
 
 ```bash
-php -S localhost:8000 -t .
+php -S localhost:8000
 ```
 
 3. Open `http://localhost:8000/` in your browser. Use Windows voice input to speak into the textarea.
@@ -105,10 +132,9 @@ php -S localhost:8000 -t .
 - Test with Ollama local server if using Ollama.
 
 ## Next steps & optional enhancements
-- Persist conversation history client-side or server-side.
-- Add user-selectable model and provider via UI.
-- Add streaming responses (server-sent events / chunked responses) for lower latency.
-- Add unit tests for PHP proxy (mock provider responses).
+- Persist conversation history server-side in a more robust way (e.g., SQLite).
+- Add user-selectable models and providers via the UI.
+- Add unit tests for the PHP backend.
 
 ## Estimated minimal timeline
 - Plan & scaffold: 30–60 minutes.

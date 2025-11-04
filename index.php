@@ -48,6 +48,10 @@
             </div>
         </div>
 
+        <div id="quick-response-area" class="mt-4">
+            <!-- Quick response will be displayed here -->
+        </div>
+
         <div id="response-area" class="mt-4">
             <!-- LLM responses will be displayed here -->
         </div>

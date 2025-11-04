@@ -6,6 +6,7 @@ $(document).ready(function() {
     const autoSendToggle = $('#autoSendToggle');
     const promptInput = $('#prompt-input');
     const responseArea = $('#response-area');
+    const quickResponseArea = $('#quick-response-area');
     const loadingIndicator = $('#loading-indicator');
 
     // Restore toggle state from localStorage
@@ -35,15 +36,39 @@ $(document).ready(function() {
         }, debounceMs);
     });
 
+    function sendQuickResponse(prompt) {
+        $.ajax({
+            url: 'api/quick_response.php',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ prompt: prompt }),
+            success: function(data) {
+                if (data.success) {
+                    const quickResponseHtml = `<div class="card mb-3 bg-light"><div class="card-body"><p class="card-text"><strong>Quick Take:</strong> ${data.response}</p></div></div>`;
+                    quickResponseArea.html(quickResponseHtml);
+                } else {
+                    console.error('Quick response error:', data.error);
+                }
+            },
+            error: function() {
+                console.error('Quick response request failed.');
+            }
+        });
+    }
+
     async function sendPrompt(prompt) {
         promptInput.val('');
         promptInput.prop('disabled', true);
         loadingIndicator.show();
+        quickResponseArea.empty();
 
         const userPromptHtml = `<div class="card mb-3"><div class="card-header"><strong>You:</strong> ${prompt}</div></div>`;
         responseArea.prepend(userPromptHtml);
 
         conversationHistory.push({ role: 'user', content: prompt });
+
+        // Fetch quick response
+        sendQuickResponse(prompt);
 
         const assistantResponseCard = $('<div class="card mb-3"><div class="card-body"><p class="card-text"><strong>Assistant:</strong> </p></div></div>');
         responseArea.prepend(assistantResponseCard);
@@ -104,4 +129,5 @@ $(document).ready(function() {
             promptInput.focus();
         }
     }
+});
 });
