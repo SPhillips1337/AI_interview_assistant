@@ -8,6 +8,8 @@ A simple web application that acts as an interview assistant. It takes spoken or
 *   **Automatic Submission:** Automatically sends the input to an LLM after a short delay (debounced).
 *   **LLM Integration:** Supports both Ollama and OpenAI as backends.
 *   **Quick Response:** Displays a quick, one-paragraph summary of the user's query topic using a lightweight model, appearing before the main response.
+*   **Markdown Response Rendering:** Assistant responses are rendered with full markdown support for improved readability, including headers, lists, code blocks, bold/italic text, and links.
+*   **Environment Configuration Integration:** Proper loading and integration of PHP environment variables with JavaScript configuration.
 *   **Enable/Disable Toggle:** A toggle switch to control automatic submission.
 *   **Responsive UI:** Clean and simple interface built with Bootstrap 5.
 *   **Conversation History:** View a timeline of all your conversations on a separate history page.
@@ -22,9 +24,10 @@ A simple web application that acts as an interview assistant. It takes spoken or
 
 ## Requirements
 
-*   PHP 7.4 or higher.
+*   PHP 7.4 or higher with support for reading .env files.
 *   An API key for either Ollama or OpenAI.
 *   Web browser with JavaScript enabled.
+*   Internet connection for CDN resources (Bootstrap, jQuery, Marked.js).
 
 ## Installation and Running
 

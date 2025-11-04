@@ -3,7 +3,7 @@
     "description": "A simple web application that acts as an interview assistant. It takes spoken or typed input, sends it to a large language model (LLM), and displays the response. It also keeps a history of conversations and allows for deeper research on responses using Perplexica.",
     "developmentStatus": "In Development",
     "technologies": {
-        "frontend": ["HTML5", "CSS3", "Bootstrap 5", "jQuery"],
+        "frontend": ["HTML5", "CSS3", "Bootstrap 5", "jQuery", "Marked.js"],
         "backend": "PHP"
     },
     "features": [
@@ -71,12 +71,23 @@
             "name": "Quick Response",
             "description": "Displays a quick, one-paragraph summary of the user's query topic using a lightweight model, appearing before the main response.",
             "status": "Implemented"
+        },
+        {
+            "name": "Markdown Response Rendering",
+            "description": "Assistant responses are rendered with markdown formatting for improved readability, including headers, lists, code blocks, and links.",
+            "status": "Implemented"
+        },
+        {
+            "name": "Environment Configuration Integration",
+            "description": "PHP environment variables are properly loaded and passed to JavaScript for dynamic configuration.",
+            "status": "Implemented"
         }
     ],
     "futureEnhancements": [
         "Persist conversation history server-side in a more robust way (e.g., SQLite).",
         "Add user-selectable models and providers via the UI.",
-        "Add unit tests for the PHP backend."
+        "Add unit tests for the PHP backend.",
+        "Add syntax highlighting for code blocks in markdown responses."
     ],
     "fileStructure": {
         "index.php": "Main application page with a chat-style interface for asking questions and seeing a scrollable history of responses.",
