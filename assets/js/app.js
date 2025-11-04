@@ -1,7 +1,7 @@
 $(document).ready(function() {
     let debounceTimer;
     const debounceMs = window.appConfig?.debounceMs || 700;
-    let conversationHistory = [];
+    let conversationHistory = JSON.parse(localStorage.getItem('conversationHistory') || '[]');
     let queryQueue = [];
     let isProcessing = false;
 
@@ -70,6 +70,14 @@ $(document).ready(function() {
         });
     }
 
+    // Keep only the last 10 exchanges (20 messages) to maintain context without overwhelming the API
+    function trimConversationHistory() {
+        if (conversationHistory.length > 20) {
+            conversationHistory = conversationHistory.slice(-20);
+            localStorage.setItem('conversationHistory', JSON.stringify(conversationHistory));
+        }
+    }
+
     function updateQueueIndicator() {
         if (queryQueue.length > 0) {
             queueCount.text(queryQueue.length);
@@ -98,6 +106,8 @@ $(document).ready(function() {
         responseArea.prepend(userPromptHtml);
 
         conversationHistory.push({ role: 'user', content: prompt });
+        localStorage.setItem('conversationHistory', JSON.stringify(conversationHistory));
+        console.log('Current conversation history:', conversationHistory);
 
         const assistantResponseCard = $('<div class="card mb-3"><div class="card-body"><p class="card-text"><strong>Assistant:</strong> </p></div></div>');
         responseArea.prepend(assistantResponseCard);
@@ -174,6 +184,8 @@ $(document).ready(function() {
         } finally {
             console.log('Hiding loading indicator.');
             conversationHistory.push({ role: 'assistant', content: fullResponse });
+            trimConversationHistory();
+            localStorage.setItem('conversationHistory', JSON.stringify(conversationHistory));
             isProcessing = false;
             loadingIndicator.hide();
             promptInput.focus();
