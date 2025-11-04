@@ -20,8 +20,13 @@ function callLlmForSummary($prompt, $config) {
     if ($provider === 'ollama') {
         $ollamaUrl = isset($config['OLLAMA_URL']) ? $config['OLLAMA_URL'] : 'http://127.0.0.1:11434';
         $ollamaModel = isset($config['OLLAMA_MODEL']) ? $config['OLLAMA_MODEL'] : 'llama2';
-        $data = ['model' => $ollamaModel, 'prompt' => $prompt, 'stream' => false];
-        $ch = curl_init($ollamaUrl . '/api/generate');
+        $data = [
+            'model' => $ollamaModel, 
+            'messages' => [['role' => 'user', 'content' => $prompt]], 
+            'stream' => false
+        ];
+        $ch = curl_init($ollamaUrl . '/api/chat');
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
     } else if ($provider === 'openai') {
         $apiKey = isset($config['OPENAI_API_KEY']) ? $config['OPENAI_API_KEY'] : '';
         if (empty($apiKey)) return null;
@@ -50,7 +55,7 @@ function callLlmForSummary($prompt, $config) {
 
     $responseData = json_decode($response, true);
     if ($provider === 'ollama') {
-        return $responseData['response'] ?? null;
+        return $responseData['message']['content'] ?? null;
     } else if ($provider === 'openai') {
         return $responseData['choices'][0]['message']['content'] ?? null;
     }
@@ -79,14 +84,15 @@ $summary_prompt = "Provide a concise, one or two paragraph summary of the follow
 $summary = callLlmForSummary($summary_prompt, $config) ?? 'Could not generate summary.';
 
 // 4. Build HTML Report
-$html = "<!DOCTYPE html><html lang='en'>\n<head>\n    <meta charset='UTF-8'>\n    <title>Conversation Report</title>\n    <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' rel='stylesheet'>\n</head>\n<body class='container mt-5'>";
+$html = "<!DOCTYPE html><html lang='en'>\n<head>\n    <meta charset='UTF-8'>\n    <title>Conversation Report</title>\n    <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' rel='stylesheet'>\n    <script src='https://cdn.jsdelivr.net/npm/marked/marked.min.js'></script>\n</head>\n<body class='container mt-5'>";
 $html .= "<h1>Conversation Summary Report</h1>";
+$html .= "<p class='text-muted'>Generated on " . date('Y-m-d H:i:s') . "</p>";
 
-$html .= "<h2>Summary of Topics Discussed</h2><p>" . nl2br(htmlspecialchars($summary)) . "</p>";
+$html .= "<h2>Summary of Topics Discussed</h2><div id='summary-content'>" . nl2br(htmlspecialchars($summary)) . "</div>";
 
 $html .= "<h2>Full Transcript</h2>";
 foreach ($history as $entry) {
-    $html .= "<div class='card mb-3'><div class='card-header'><strong>You:</strong> " . htmlspecialchars($entry['prompt']) . "</div><div class='card-body'><strong>Assistant:</strong> " . nl2br(htmlspecialchars($entry['response'])) . "</div></div>";
+    $html .= "<div class='card mb-3'><div class='card-header'><strong>You:</strong> " . htmlspecialchars($entry['prompt']) . "</div><div class='card-body'><strong>Assistant:</strong> <div class='response-content'>" . nl2br(htmlspecialchars($entry['response'])) . "</div></div></div>";
 }
 
 $html .= "<h2>Further Resources</h2><p>Based on the topics discussed, here are some links for further research:</p><ul>";
@@ -99,10 +105,28 @@ foreach ($topics_data as $topic) {
 }
 $html .= "</ul>";
 
+$html .= "<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Render markdown for summary
+    const summaryContent = document.getElementById('summary-content');
+    if (summaryContent && typeof marked !== 'undefined') {
+        summaryContent.innerHTML = marked.parse(summaryContent.textContent);
+    }
+    
+    // Render markdown for all responses
+    const responseContents = document.querySelectorAll('.response-content');
+    responseContents.forEach(function(content) {
+        if (typeof marked !== 'undefined') {
+            content.innerHTML = marked.parse(content.textContent);
+        }
+    });
+});
+</script>";
+
 $html .= "</body></html>";
 
 // 5. Send Headers and Output
 header('Content-Type: text/html');
-header('Content-Disposition: attachment; filename=\"conversation_report.html\"');
+header('Content-Disposition: attachment; filename=conversation_report.html');
 echo $html;
 
