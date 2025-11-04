@@ -98,11 +98,13 @@ $(document).ready(function() {
             }
         });
 
-        if (topicNav.find('.text-muted').length) {
+        // Remove placeholder text if it exists
+        if (topicNav.find('.text-muted.text-center').length) {
             topicNav.empty();
         }
         
-        topicNav.append(topicItem);
+        // Add new item to the top of the list
+        topicNav.prepend(topicItem);
     }
 
     function updateQueueIndicator() {
