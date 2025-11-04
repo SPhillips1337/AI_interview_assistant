@@ -24,6 +24,7 @@ A simple web application that acts as an interview assistant. It takes spoken or
 
 *   PHP 7.4 or higher.
 *   An API key for either Ollama or OpenAI.
+*   Web browser with JavaScript enabled.
 
 ## Installation and Running
 
@@ -91,8 +92,8 @@ The application uses a simple PHP proxy to communicate with the LLM provider.
       ]
     }
     ```
-*   **Response (Server-Sent Events):
-**    The endpoint streams the response using SSE. Each message is a JSON object with the following structure:
+*   **Response (Server-Sent Events):**
+    The endpoint streams the response using SSE. Each message is a JSON object with the following structure:
     ```json
     data: {"success":true,"response":"The LLM's response chunk."}
     ```
@@ -111,6 +112,10 @@ The application uses a simple PHP proxy to communicate with the LLM provider.
       "response": "A short, one-paragraph summary of the topic."
     }
     ```
+
+*   **Endpoint:** `GET /api/history.php`
+*   **Response (JSON):**
+    Returns the conversation history as a JSON array.
 
 *   **Endpoint:** `GET /api/topic.php`
 *   **Response (JSON):**
@@ -134,3 +139,13 @@ The application uses a simple PHP proxy to communicate with the LLM provider.
 *   **Endpoint:** `GET /api/generate_report.php`
 *   **Response:**
     An HTML page attachment containing a full report of the conversation.
+
+*   **Endpoint:** `POST /api/perplexica.php`
+*   **Request Body (JSON):**
+    ```json
+    {
+      "query": "Text to research further..."
+    }
+    ```
+*   **Response (JSON):**
+    Proxies the request to the configured Perplexica instance.

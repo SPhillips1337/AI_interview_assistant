@@ -38,7 +38,7 @@ $(document).ready(function() {
                         <strong>You:</strong> ${item.prompt}
                     </div>
                     <div class="card-body">
-                        <p class="card-text"><strong>Assistant:</strong> ${item.response}</p>
+                        <div class="card-text"><strong>Assistant:</strong> <div class="mt-2">${marked.parse(item.response)}</div></div>
                         ${perplexicaButton}
                     </div>
                 </div>`;

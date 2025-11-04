@@ -1,6 +1,6 @@
 $(document).ready(function() {
     let debounceTimer;
-    const debounceMs = 700;
+    const debounceMs = window.appConfig?.debounceMs || 700;
     let conversationHistory = [];
 
     const autoSendToggle = $('#autoSendToggle');
@@ -80,7 +80,11 @@ $(document).ready(function() {
 
         let fullResponse = '';
 
-        const quickResponsePromise = sendQuickResponse(prompt);
+        try {
+            await sendQuickResponse(prompt);
+        } catch (error) {
+            console.error("Quick response failed:", error);
+        }
 
         const mainResponsePromise = new Promise(async (resolve, reject) => {
             console.log('Sending main request...');
@@ -115,7 +119,8 @@ $(document).ready(function() {
                                     const data = JSON.parse(jsonStr);
                                     if (data.success) {
                                         fullResponse += data.response;
-                                        assistantResponseContent.html(`<strong>Assistant:</strong> ${fullResponse}`);
+                                        const renderedResponse = marked.parse(fullResponse);
+                                        assistantResponseContent.html(`<strong>Assistant:</strong> <div class="mt-2">${renderedResponse}</div>`);
                                     } else if (data.error) {
                                         const errorHtml = `<div class="alert alert-danger">Error: ${data.error}</div>`;
                                         responseArea.prepend(errorHtml);
@@ -138,10 +143,9 @@ $(document).ready(function() {
         });
 
         try {
-            await Promise.all([quickResponsePromise, mainResponsePromise]);
-            console.log('Both promises resolved.');
+            await mainResponsePromise;
         } catch (error) {
-            console.error("An error occurred in one of the promises:", error);
+            console.error("Main response failed:", error);
         } finally {
             console.log('Hiding loading indicator.');
             conversationHistory.push({ role: 'assistant', content: fullResponse });
