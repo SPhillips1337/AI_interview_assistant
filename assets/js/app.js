@@ -251,7 +251,7 @@ $(document).ready(function() {
                 };
                 
                 mediaRecorder.onstop = () => {
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                     transcribeAudio(audioBlob);
                     stream.getTracks().forEach(track => track.stop());
                 };

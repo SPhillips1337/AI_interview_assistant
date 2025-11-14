@@ -35,8 +35,7 @@
       "responses": {
         "200": {
           "content_type": "application/json",
-          "description": "Successful transcription. Usually the raw JSON output from whisper-cli (contains `segments` and `text`). If parsing fails, the server returns a simple object `{ \"text\": \"...\" }`.
-",
+          "description": "Successful transcription. Usually the raw JSON output from whisper-cli (contains `segments` and `text`). If parsing fails, the server returns a simple object `{ \"text\": \"...\" }`.",
           "examples": [
             {
               "type": "whisper_json",

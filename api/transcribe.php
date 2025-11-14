@@ -22,15 +22,23 @@ if (file_exists($envFile)) {
     }
 }
 
-$whisperProvider = $_ENV['WHISPER_PROVIDER'] ?? 'openai';
+$whisperProvider = $_ENV['WHISPER_PROVIDER'] ?? 'local';
 
-if (!isset($_FILES['file'])) {
-    http_response_code(400);
-    echo json_encode(['error' => 'No audio file provided']);
-    exit;
+// Check for audio file in common field names
+$audioFile = null;
+if (isset($_FILES['file'])) {
+    $audioFile = $_FILES['file'];
+} elseif (isset($_FILES['audio'])) {
+    $audioFile = $_FILES['audio'];
+} elseif (!empty($_FILES)) {
+    $audioFile = reset($_FILES); // Get first uploaded file
 }
 
-$audioFile = $_FILES['file'];
+if (!$audioFile) {
+    http_response_code(400);
+    echo json_encode(['error' => 'No audio file provided', 'debug' => array_keys($_FILES)]);
+    exit;
+}
 
 try {
     if ($whisperProvider === 'openai') {
@@ -82,27 +90,59 @@ function transcribeWithOpenAI($audioFile) {
 }
 
 function transcribeWithLocal($audioFile) {
-    $whisperPath = $_ENV['WHISPER_LOCAL_PATH'] ?? '/usr/local/bin/whisper';
+    $whisperUrl = $_ENV['WHISPER_LOCAL_URL'] ?? 'http://192.168.5.227:8123';
     
-    if (!file_exists($whisperPath)) {
-        throw new Exception('Local Whisper not found at: ' . $whisperPath);
+    if ($audioFile['error'] !== UPLOAD_ERR_OK || $audioFile['size'] == 0) {
+        throw new Exception('File upload error: ' . $audioFile['error'] . ', size: ' . $audioFile['size']);
     }
     
-    $tempFile = tempnam(sys_get_temp_dir(), 'whisper_');
-    move_uploaded_file($audioFile['tmp_name'], $tempFile);
-    
-    $command = escapeshellcmd($whisperPath) . ' --output-format txt --output-dir /tmp ' . escapeshellarg($tempFile);
-    $output = shell_exec($command . ' 2>&1');
-    
-    $txtFile = '/tmp/' . basename($tempFile) . '.txt';
-    if (file_exists($txtFile)) {
-        $transcription = file_get_contents($txtFile);
-        unlink($txtFile);
-        unlink($tempFile);
-        return trim($transcription);
+    // Check for WebM format and convert to WAV if needed
+    $fileHeader = file_get_contents($audioFile['tmp_name'], false, null, 0, 4);
+    if (bin2hex($fileHeader) === '1a45dfa3') {
+        // WebM detected - try to convert to WAV using ffmpeg
+        $wavFile = tempnam(sys_get_temp_dir(), 'whisper_') . '.wav';
+        $cmd = "ffmpeg -i " . escapeshellarg($audioFile['tmp_name']) . " -ar 16000 -ac 1 " . escapeshellarg($wavFile) . " 2>/dev/null";
+        exec($cmd, $output, $returnCode);
+        
+        if ($returnCode === 0 && file_exists($wavFile)) {
+            $audioFile['tmp_name'] = $wavFile;
+            $audioFile['type'] = 'audio/wav';
+            $audioFile['name'] = 'converted.wav';
+        }
     }
     
-    unlink($tempFile);
-    throw new Exception('Transcription failed: ' . $output);
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $whisperUrl . '/transcribe?language=en');
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 300);
+    
+    $postFields = [
+        'file' => new CURLFile($audioFile['tmp_name'], 'audio/wav', 'recording.wav')
+    ];
+    
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
+    
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    // Clean up temp file if created
+    if (isset($wavFile) && file_exists($wavFile)) {
+        unlink($wavFile);
+    }
+    
+    if ($httpCode !== 200) {
+        throw new Exception('Whisper API error (HTTP ' . $httpCode . '): ' . $response);
+    }
+    
+    $data = json_decode($response, true);
+    $text = isset($data['text']) ? trim($data['text']) : '';
+    
+    if (empty($text)) {
+        throw new Exception('No transcription result');
+    }
+    
+    return $text;
 }
 ?>
