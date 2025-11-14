@@ -32,6 +32,7 @@ A responsive web application that acts as an AI research assistant. It takes spo
 *   An API key for either Ollama or OpenAI.
 *   Web browser with JavaScript enabled.
 *   Internet connection for CDN resources (Bootstrap, jQuery, Marked.js).
+*   Optional: local whisper setup for transcription - This code has been setup here to work with Whisper on windows and a FAST API endpoint as per https://github.com/SPhillips1337/whisper-win-vulkan-api
 
 ## Installation and Running
 
