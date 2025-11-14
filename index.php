@@ -76,8 +76,11 @@ if (file_exists('.env')) {
                         <div class="mb-3">
                             <div class="input-group">
                                 <textarea class="form-control" id="prompt-input" rows="4" placeholder="Speak or type your thoughts here..."></textarea>
-                                <button class="btn btn-outline-secondary" type="button" id="voice-input-btn" title="Voice Input">
+                                <button class="btn btn-outline-secondary" type="button" id="voice-input-btn" title="Single click: Record once | Double click: Continuous recording">
                                     <i class="fas fa-microphone"></i>
+                                </button>
+                                <button class="btn btn-primary" type="button" id="send-btn" title="Send Message">
+                                    <i class="fas fa-paper-plane"></i>
                                 </button>
                             </div>
                         </div>
@@ -117,7 +120,9 @@ if (file_exists('.env')) {
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         window.appConfig = {
-            debounceMs: <?php echo $_ENV['DEBOUNCE_MS'] ?? 700; ?>
+            debounceMs: <?php echo $_ENV['DEBOUNCE_MS'] ?? 700; ?>,
+            whisperChunkSeconds: <?php echo $_ENV['WHISPER_CHUNK_SECONDS'] ?? 8; ?>,
+            whisperGapSeconds: <?php echo $_ENV['WHISPER_GAP_SECONDS'] ?? 1; ?>
         };
     </script>
     <script src="assets/js/app.js"></script>

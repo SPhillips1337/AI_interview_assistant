@@ -139,6 +139,16 @@ function transcribeWithLocal($audioFile) {
     $data = json_decode($response, true);
     $text = isset($data['text']) ? trim($data['text']) : '';
     
+    // Remove timestamp markers like [00:00:00.000 --> 00:00:02.000]
+    $text = preg_replace('/\[[\d:.,\s\-\>]+\]\s*/', '', $text);
+    
+    // Filter out blank audio indicators
+    if (empty($text) || $text === '[BLANK_AUDIO]' || preg_match('/^\[.*BLANK.*\]$/i', $text)) {
+        throw new Exception('No speech detected');
+    }
+    
+    $text = trim($text);
+    
     if (empty($text)) {
         throw new Exception('No transcription result');
     }

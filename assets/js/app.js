@@ -14,11 +14,14 @@ $(document).ready(function() {
     const queueCount = $('#queue-count');
     const topicNav = $('#topic-nav');
     const voiceInputBtn = $('#voice-input-btn');
+    const sendBtn = $('#send-btn');
 
     let responseCounter = 0;
     let mediaRecorder = null;
     let audioChunks = [];
     let isRecording = false;
+    let isContinuousMode = false;
+    let continuousStream = null;
 
     // Restore toggle state from localStorage
     if (localStorage.getItem('autoSend') === 'false') {
@@ -233,10 +236,30 @@ $(document).ready(function() {
 
     // Voice input functionality
     voiceInputBtn.click(function() {
-        if (isRecording) {
+        if (isContinuousMode) {
+            stopContinuousRecording();
+        } else if (isRecording) {
             stopRecording();
         } else {
             startRecording();
+        }
+    });
+
+    // Double-click for continuous mode
+    voiceInputBtn.dblclick(function() {
+        if (!isContinuousMode && !isRecording) {
+            startContinuousRecording();
+        }
+    });
+
+    // Send button functionality
+    sendBtn.click(function() {
+        const prompt = promptInput.val().trim();
+        if (prompt) {
+            queryQueue.push(prompt);
+            promptInput.val('');
+            updateQueueIndicator();
+            processQueue();
         }
     });
 
@@ -278,7 +301,7 @@ $(document).ready(function() {
 
     function transcribeAudio(audioBlob) {
         const formData = new FormData();
-        formData.append('audio', audioBlob, 'recording.wav');
+        formData.append('file', audioBlob, 'recording.webm');
         
         voiceInputBtn.html('<i class="fas fa-spinner fa-spin"></i>');
         voiceInputBtn.attr('title', 'Transcribing...');
@@ -290,24 +313,111 @@ $(document).ready(function() {
             processData: false,
             contentType: false,
             success: function(response) {
-                if (response.success && response.text) {
+                if (response.success && response.text && response.text.trim()) {
                     const currentText = promptInput.val();
                     const newText = currentText ? currentText + ' ' + response.text : response.text;
                     promptInput.val(newText);
                     promptInput.focus();
-                } else {
+                    
+                    // Auto-send if enabled
+                    if (autoSendToggle.prop('checked')) {
+                        queryQueue.push(response.text);
+                        updateQueueIndicator();
+                        processQueue();
+                    }
+                }
+                // Silently ignore errors in continuous mode
+                if (response.error && !isContinuousMode) {
                     console.error('Transcription failed:', response.error);
-                    alert('Transcription failed: ' + (response.error || 'Unknown error'));
+                    alert('Transcription failed: ' + response.error);
                 }
             },
             error: function(xhr, status, error) {
-                console.error('Transcription error:', error);
-                alert('Transcription failed. Please try again.');
+                // Silently ignore errors in continuous mode
+                if (!isContinuousMode) {
+                    console.error('Transcription error:', error);
+                    alert('Transcription failed. Please try again.');
+                }
             },
             complete: function() {
                 voiceInputBtn.html('<i class="fas fa-microphone"></i>');
                 voiceInputBtn.attr('title', 'Voice Input');
             }
         });
+    }
+
+    function startContinuousRecording() {
+        console.log('Starting continuous recording...');
+        isContinuousMode = true; // Set this immediately to suppress errors
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                continuousStream = stream;
+                voiceInputBtn.html('<i class="fas fa-stop text-danger"></i>');
+                voiceInputBtn.attr('title', 'Stop Continuous Recording');
+                console.log('Continuous mode started, recording first chunk...');
+                // Small delay before starting first chunk
+                setTimeout(recordChunk, 500);
+            })
+            .catch(err => {
+                isContinuousMode = false;
+                console.error('Error accessing microphone:', err);
+                alert('Error accessing microphone. Please check permissions.');
+            });
+    }
+
+    function recordChunk() {
+        if (!isContinuousMode || !continuousStream) {
+            console.log('Stopping chunk recording - mode:', isContinuousMode, 'stream:', !!continuousStream);
+            return;
+        }
+        
+        console.log('Recording chunk for', window.appConfig?.whisperChunkSeconds || 8, 'seconds');
+        mediaRecorder = new MediaRecorder(continuousStream);
+        audioChunks = [];
+        
+        mediaRecorder.ondataavailable = event => {
+            if (event.data.size > 0) {
+                audioChunks.push(event.data);
+            }
+        };
+        
+        mediaRecorder.onstop = () => {
+            // Only transcribe if we have audio data
+            if (audioChunks.length > 0) {
+                console.log('Chunk complete, transcribing...');
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                transcribeAudio(audioBlob);
+            }
+            
+            // Start next chunk after configured gap
+            if (isContinuousMode) {
+                const gapMs = (window.appConfig?.whisperGapSeconds || 1) * 1000;
+                console.log('Waiting', gapMs, 'ms before next chunk');
+                setTimeout(recordChunk, gapMs);
+            }
+        };
+        
+        mediaRecorder.start();
+        // Record for configured seconds
+        const chunkMs = (window.appConfig?.whisperChunkSeconds || 8) * 1000;
+        setTimeout(() => {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                console.log('Stopping chunk recording');
+                mediaRecorder.stop();
+            }
+        }, chunkMs);
+    }
+
+    function stopContinuousRecording() {
+        isContinuousMode = false;
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+        }
+        if (continuousStream) {
+            continuousStream.getTracks().forEach(track => track.stop());
+            continuousStream = null;
+        }
+        voiceInputBtn.html('<i class="fas fa-microphone"></i>');
+        voiceInputBtn.attr('title', 'Single click: Record once | Double click: Continuous recording');
     }
 });
