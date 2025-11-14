@@ -4,7 +4,7 @@ A responsive web application that acts as an AI research assistant. It takes spo
 
 ## Features
 
-*   **Voice/Text Input:** Accepts user input in a textarea.
+*   **Voice/Text Input:** Accepts user input in a textarea with click-to-record voice input support.
 *   **Automatic Submission:** Automatically sends the input to an LLM after a short delay (debounced).
 *   **LLM Integration:** Supports both Ollama and OpenAI as backends.
 *   **Quick Response:** Displays a context-aware, one-paragraph summary of the user's query topic using a lightweight model, appearing before the main response.
@@ -38,7 +38,7 @@ A responsive web application that acts as an AI research assistant. It takes spo
 1.  **Clone the repository:**
     ```bash
     git clone <repository-url>
-    cd interview-assistant
+    cd interview
     ```
 
 2.  **Configure environment variables:**
@@ -81,6 +81,9 @@ The application is configured through the `.env` file. The following variables a
 *   `DEBOUNCE_MS`: The debounce delay in milliseconds before sending the input.
 *   `TIMEOUT_SECONDS`: The request timeout in seconds.
 *   `PERPLEXICA_URL`: The URL for your Perplexica instance (e.g., `http://192.168.5.227:3030`).
+*   `WHISPER_PROVIDER`: The transcription provider to use. Can be `openai` or `local`.
+*   `WHISPER_MODEL`: The Whisper model to use (for OpenAI provider).
+*   `WHISPER_LOCAL_PATH`: Path to local Whisper installation (for local provider).
 
 **Note:** Do not commit the `.env` file to version control.
 

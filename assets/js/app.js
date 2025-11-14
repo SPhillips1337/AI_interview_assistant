@@ -13,8 +13,12 @@ $(document).ready(function() {
     const queueIndicator = $('#queue-indicator');
     const queueCount = $('#queue-count');
     const topicNav = $('#topic-nav');
+    const voiceInputBtn = $('#voice-input-btn');
 
     let responseCounter = 0;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
 
     // Restore toggle state from localStorage
     if (localStorage.getItem('autoSend') === 'false') {
@@ -225,5 +229,85 @@ $(document).ready(function() {
             promptInput.focus();
             processQueue();
         }
+    }
+
+    // Voice input functionality
+    voiceInputBtn.click(function() {
+        if (isRecording) {
+            stopRecording();
+        } else {
+            startRecording();
+        }
+    });
+
+    function startRecording() {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+                
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    transcribeAudio(audioBlob);
+                    stream.getTracks().forEach(track => track.stop());
+                };
+                
+                mediaRecorder.start();
+                isRecording = true;
+                voiceInputBtn.html('<i class="fas fa-stop text-danger"></i>');
+                voiceInputBtn.attr('title', 'Stop Recording');
+            })
+            .catch(err => {
+                console.error('Error accessing microphone:', err);
+                alert('Could not access microphone. Please check permissions.');
+            });
+    }
+
+    function stopRecording() {
+        if (mediaRecorder && isRecording) {
+            mediaRecorder.stop();
+            isRecording = false;
+            voiceInputBtn.html('<i class="fas fa-microphone"></i>');
+            voiceInputBtn.attr('title', 'Voice Input');
+        }
+    }
+
+    function transcribeAudio(audioBlob) {
+        const formData = new FormData();
+        formData.append('audio', audioBlob, 'recording.wav');
+        
+        voiceInputBtn.html('<i class="fas fa-spinner fa-spin"></i>');
+        voiceInputBtn.attr('title', 'Transcribing...');
+        
+        $.ajax({
+            url: 'api/transcribe.php',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success && response.text) {
+                    const currentText = promptInput.val();
+                    const newText = currentText ? currentText + ' ' + response.text : response.text;
+                    promptInput.val(newText);
+                    promptInput.focus();
+                } else {
+                    console.error('Transcription failed:', response.error);
+                    alert('Transcription failed: ' + (response.error || 'Unknown error'));
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Transcription error:', error);
+                alert('Transcription failed. Please try again.');
+            },
+            complete: function() {
+                voiceInputBtn.html('<i class="fas fa-microphone"></i>');
+                voiceInputBtn.attr('title', 'Voice Input');
+            }
+        });
     }
 });

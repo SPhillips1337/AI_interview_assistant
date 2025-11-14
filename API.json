@@ -1,0 +1,83 @@
+{
+  "name": "whisper.cpp-fastapi",
+  "version": "1.0",
+  "base_url": "http://localhost:8000",
+  "endpoints": [
+    {
+      "path": "/transcribe",
+      "method": "POST",
+      "description": "Upload an audio file and receive transcription JSON (or fallback text).",
+      "query_params": {
+        "translate": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to translate the audio to English"
+        },
+        "language": {
+          "type": "string",
+          "default": "en",
+          "description": "Language code (e.g. 'en') or 'auto'"
+        },
+        "duration_ms": {
+          "type": "integer",
+          "default": 0,
+          "description": "Process only the first N milliseconds (0 = full file)"
+        }
+      },
+      "form_fields": {
+        "file": {
+          "type": "file",
+          "required": true,
+          "content_type": "audio/*",
+          "description": "Multipart file upload. Prefer WAV (PCM); MP3/OGG supported depending on whisper-cli build."
+        }
+      },
+      "responses": {
+        "200": {
+          "content_type": "application/json",
+          "description": "Successful transcription. Usually the raw JSON output from whisper-cli (contains `segments` and `text`). If parsing fails, the server returns a simple object `{ \"text\": \"...\" }`.
+",
+          "examples": [
+            {
+              "type": "whisper_json",
+              "sample": {
+                "language": "en",
+                "segments": [
+                  { "id": 0, "seek": 0, "start": 0.0, "end": 2.3, "text": "Hello world" }
+                ],
+                "text": "Hello world"
+              }
+            },
+            {
+              "type": "fallback_text",
+              "sample": { "text": "Hello world" }
+            }
+          ]
+        },
+        "500": {
+          "description": "Server error (missing binary/model or subprocess failure)",
+          "schema": { "detail": "string" }
+        }
+      },
+      "notes": "Use multipart/form-data. Server enforces concurrency via the CONCURRENCY env var; files are written to the system temp directory and removed after processing."
+    }
+  ],
+  "integration_guidance": {
+    "chunking_strategy": "Client-side must slice meeting audio into discrete blocks and POST each block separately. Recommended: 8-12 second chunks with 1-2 second overlap to preserve word continuity across boundaries.",
+    "timestamp_alignment": "Use the `segments` array and its `start`/`end` timestamps from each response to stitch chunks together. Keep track of each chunk's absolute start offset when posting so you can rebase segment timestamps if needed.",
+    "overlap_handling": "Trim overlapping text when merging by comparing segment timestamps; prefer deduplication by timestamp rather than raw text comparison.",
+    "concurrency_and_performance": "Server default `CONCURRENCY=1`. Increasing concurrency may speed throughput but can cause GPU/RAM contention. If GPU is unavailable, whisper-cli will fall back to CPU.",
+    "error_handling": "If a POST returns HTTP 500, retry the chunk (with backoff). If the response returns a fallback `{ \"text\": ... }`, treat it as a successful but minimal result.",
+    "file_types": "Prefer WAV (PCM) for best results; compressed formats OK if supported by whisper-cli. Ensure sampling rate is consistent (e.g., 16 kHz+)."
+  },
+  "examples": {
+    "curl": "curl -X POST \"http://localhost:8000/transcribe?language=en&translate=false\" -H \"accept: application/json\" -F \"file=@/path/to/chunk.wav;type=audio/wav\"",
+    "python_requests": "import requests\nwith open('chunk.wav','rb') as f:\n    r = requests.post('http://localhost:8000/transcribe', params={'language':'en','translate':'false'}, files={'file': f})\nprint(r.json())"
+  },
+  "env_vars": {
+    "WHISPER_BIN": "Path to whisper-cli binary (overrides default)",
+    "MODEL_PATH": "Path to ggml model file (overrides default)",
+    "CONCURRENCY": "Integer semaphore for concurrent subprocesses (default 1)"
+  },
+  "notes_for_llm": "This JSON describes a synchronous HTTP endpoint for single-file transcription. For live meeting transcription, the LLM should chunk audio client-side, POST each chunk to `/transcribe`, then merge returned segments using timestamp alignment. Handle possible fallback responses and 500 errors with retries/backoff."
+}
